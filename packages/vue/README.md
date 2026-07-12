@@ -1,6 +1,6 @@
 # @clicktocode/vue
 
-Click an element in your running Vue 3 app and hand it to a coding agent.
+Click an element in your running **Vue 3** app and hand it to a coding agent. [Full docs →](https://github.com/aminarshadinia/clicktocode)
 
 ```bash
 npm i -D @clicktocode/vue
@@ -19,8 +19,8 @@ if (import.meta.env.DEV) {
 }
 ```
 
-Hold **Alt**, click an element, describe the change — OpenCode edits your code. Adapters: `opencodeAdapter`, `clipboardAdapter`, `cursorAdapter`. Run a second picker on another hotkey, e.g. `clickToCode({ adapter: clipboardAdapter(), hotkey: ["Meta", "c"] })`.
+Hold <kbd>Alt</kbd>, click an element, describe the change — OpenCode edits your code. Run a second picker on another key for clipboard: `clickToCode({ adapter: clipboardAdapter(), hotkey: ["Meta", "c"] })`.
 
-The Vue component owner stack is read from Vue's dev-build internals (`__vueParentComponent`); production builds strip these, so the stack is empty there — but you run this in dev, where it's fully populated.
+**Component stack** is read from Vue's dev-only `__vueParentComponent` — full names, props, and `.vue` file paths in dev; empty in production builds (which is fine — you run this in dev). Needs OpenCode: `npm i -g opencode-ai@latest && opencode auth login` (or use `clipboardAdapter()`).
 
-Full docs: [clicktocode](https://github.com/aminarshadinia/clicktocode). Built on [`@clicktocode/core`](https://www.npmjs.com/package/@clicktocode/core). MIT.
+Adapters: `opencodeAdapter`, `clipboardAdapter`, `cursorAdapter`. Built on [`@clicktocode/core`](https://www.npmjs.com/package/@clicktocode/core). MIT.
