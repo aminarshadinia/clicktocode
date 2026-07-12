@@ -1,0 +1,47 @@
+/**
+ * @clicktocode/angular — click an element in your running Angular app and hand it to a
+ * coding agent. Wraps @clicktocode/core with a Angular component-stack walker.
+ */
+import { createPicker, type CreatePickerOptions, type Picker } from "@clicktocode/core";
+import { captureContext } from "./context.js";
+
+export interface ClickToCodeOptions extends Omit<CreatePickerOptions, "captureContext"> {}
+
+/**
+ * Start the clicktocode picker for a Angular app. Hold the hotkey (Alt by
+ * default), click an element, and it goes to the configured adapter.
+ *
+ * ```ts
+ * import { clickToCode, opencodeAdapter } from "@clicktocode/angular";
+ * clickToCode({ adapter: opencodeAdapter({ getOptions: () => ({ agent: "build" }) }) });
+ * ```
+ */
+export function clickToCode(options: ClickToCodeOptions = {}): Picker {
+  return createPicker({ ...options, captureContext });
+}
+
+export { captureContext } from "./context.js";
+
+// Re-export the framework-neutral surface so consumers need only this package.
+export {
+  clipboardAdapter,
+  cursorAdapter,
+  opencodeAdapter,
+  createOpenCodeAgentProvider,
+  formatPrompt,
+  DEFAULT_PORT,
+} from "@clicktocode/core";
+export type {
+  OpenCodeAdapterOptions,
+  OpenCodeAgentProvider,
+  OpenCodeAgentProviderOptions,
+  SendPromptHandle,
+  CreatePickerOptions,
+  Picker,
+  ClickAdapter,
+  ClickContext,
+  ComponentStackEntry,
+  AgentEvent,
+  AgentStatus,
+  OpenCodeRunOptions,
+} from "@clicktocode/core";

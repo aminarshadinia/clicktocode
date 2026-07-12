@@ -21,6 +21,12 @@ importers:
         specifier: ^3.0.0
         version: 3.2.7(@types/node@26.1.1)
 
+  packages/angular:
+    dependencies:
+      '@clicktocode/core':
+        specifier: workspace:^
+        version: link:../core
+
   packages/core:
     dependencies:
       '@opencode-ai/sdk':
@@ -28,6 +34,12 @@ importers:
         version: 1.17.18
 
   packages/react:
+    dependencies:
+      '@clicktocode/core':
+        specifier: workspace:^
+        version: link:../core
+
+  packages/svelte:
     dependencies:
       '@clicktocode/core':
         specifier: workspace:^

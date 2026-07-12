@@ -17,6 +17,8 @@ Hold <kbd>Alt</kbd>, click any element, type an instruction — clicktocode capt
 |---|---|---|
 | [`@clicktocode/vue`](packages/vue) | `npm i -D @clicktocode/vue` | Vue 3 apps |
 | [`@clicktocode/react`](packages/react) | `npm i -D @clicktocode/react` | React apps |
+| [`@clicktocode/svelte`](packages/svelte) | `npm i -D @clicktocode/svelte` | Svelte 4/5 apps |
+| [`@clicktocode/angular`](packages/angular) | `npm i -D @clicktocode/angular` | Angular 17+ apps |
 | [`@clicktocode/core`](packages/core) | (dependency) | framework-neutral picker + bridge |
 
 Install the package for your framework — it pulls in `@clicktocode/core` automatically. You never install core directly unless you're building your own framework integration.
