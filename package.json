@@ -1,0 +1,24 @@
+{
+  "name": "clicktocode-monorepo",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Click an element in your running app and hand it to a coding agent. Monorepo for @clicktocode/*.",
+  "license": "MIT",
+  "author": "Amin Arshadinia",
+  "type": "module",
+  "scripts": {
+    "build": "pnpm -r --filter \"./packages/**\" build",
+    "test": "pnpm -r --filter \"./packages/**\" test",
+    "typecheck": "pnpm -r --filter \"./packages/**\" typecheck",
+    "check": "pnpm run typecheck && pnpm run test && pnpm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "tsup": "^8.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

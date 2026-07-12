@@ -1,0 +1,49 @@
+{
+  "name": "@clicktocode/vue",
+  "version": "0.1.0",
+  "description": "Click an element in your running Vue app and hand it to a coding agent — element picker + OpenCode bridge.",
+  "keywords": ["vue", "devtools", "element-picker", "coding-agent", "opencode", "ai", "vite-plugin"],
+  "license": "MIT",
+  "author": "Amin Arshadinia",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aminarshadinia/clicktocode.git",
+    "directory": "packages/vue"
+  },
+  "homepage": "https://github.com/aminarshadinia/clicktocode/tree/main/packages/vue#readme",
+  "bugs": "https://github.com/aminarshadinia/clicktocode/issues",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+      "require": { "types": "./dist/index.d.cts", "default": "./dist/index.cjs" }
+    },
+    "./vite": {
+      "import": { "types": "./dist/vite.d.ts", "default": "./dist/vite.js" },
+      "require": { "types": "./dist/vite.d.cts", "default": "./dist/vite.cjs" }
+    },
+    "./server": {
+      "import": { "types": "./dist/server.d.ts", "default": "./dist/server.js" },
+      "require": { "types": "./dist/server.d.cts", "default": "./dist/server.cjs" }
+    },
+    "./client": {
+      "import": { "types": "./dist/client.d.ts", "default": "./dist/client.js" },
+      "require": { "types": "./dist/client.d.cts", "default": "./dist/client.cjs" }
+    }
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@clicktocode/core": "workspace:^"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
