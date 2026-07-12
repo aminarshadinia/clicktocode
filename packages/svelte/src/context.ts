@@ -97,6 +97,32 @@ export function componentStack(el: HTMLElement): ComponentStackEntry[] {
   return stack;
 }
 
+/**
+ * Name-only fast path for the picker's hover label: returns just the innermost
+ * Svelte component owner's name for `el`, without computing htmlExcerpt,
+ * selectorPath, or props. Equals `componentStack(el)[0]?.componentName`.
+ */
+export function componentNameForElement(el: HTMLElement): string | null {
+  const node = nearestAnnotated(el);
+  const meta = node ? metaOf(node) : undefined;
+  if (!node || !meta?.loc) return null;
+
+  // Svelte 5: stack[0] is named from the element's own file (meta.loc.file).
+  if (meta.parent !== undefined) {
+    return nameFromFile(meta.loc.file);
+  }
+
+  // Svelte 4: stack[0] is the first DOM-walk element with a truthy file, named
+  // from that file. Mirror the same walk so the name matches componentStack.
+  let cur: HTMLElement | null = node;
+  while (cur) {
+    const file = metaOf(cur)?.loc?.file;
+    if (file) return nameFromFile(file);
+    cur = cur.parentElement;
+  }
+  return null;
+}
+
 export function selectorPath(el: HTMLElement): string {
   const parts: string[] = [];
   let node: HTMLElement | null = el;
@@ -131,6 +157,10 @@ export function htmlExcerpt(el: HTMLElement): string {
     clone.innerHTML = `<!-- ${childCount} child element${childCount === 1 ? "" : "s"} omitted -->`;
     html = clone.outerHTML;
   }
+  // Backstop: a single element with a huge attribute (e.g. a data: URI or a
+  // serialized data-* blob) can still blow past the cap with no children to
+  // omit. Hard-truncate so the prompt POSTed to the bridge stays bounded.
+  if (html.length > 1500) html = html.slice(0, 1500) + "…";
   return html;
 }
 

@@ -23,8 +23,18 @@ export default defineNuxtPlugin(() => {
       serverUrl: config?.serverUrl,
       getOptions: () => ({ agent: "build" }),
     });
-    clickToCode({ adapter }); // hold Alt
-    clickToCode({ adapter: clipboardAdapter(), hotkey: ["Meta", "c"], holdDuration: 500 }); // hold ⌘C
+    const pickers = [
+      clickToCode({ adapter }), // hold Alt
+      clickToCode({ adapter: clipboardAdapter(), hotkey: ["Meta", "c"], holdDuration: 500 }), // hold ⌘C
+    ];
     (window as unknown as { __opencodeProvider?: unknown }).__opencodeProvider = adapter.provider;
+
+    // Tear down on HMR so an in-place plugin re-run doesn't stack duplicate
+    // listeners and overlay hosts.
+    // @ts-expect-error — import.meta.hot is a Vite/Nuxt dev-only global.
+    import.meta.hot?.dispose(() => {
+      pickers.forEach((p) => p.destroy());
+      delete (window as unknown as { __opencodeProvider?: unknown }).__opencodeProvider;
+    });
   });
 });

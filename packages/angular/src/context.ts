@@ -99,6 +99,26 @@ export function componentStack(el: HTMLElement): ComponentStackEntry[] {
   return stack;
 }
 
+/**
+ * Name-only fast path for the picker's hover label: returns just the name of
+ * the innermost Angular component owner for `el`, without computing props,
+ * selector path, or HTML. Reuses the same walk and `componentName` helper as
+ * `componentStack`, so the result equals `componentStack(el)[0]?.componentName`
+ * — the hover label matches the entry that selection will produce.
+ */
+export function componentNameForElement(el: HTMLElement): string | null {
+  const api = ng();
+  if (!api) return null; // production / no dev helpers
+
+  let node: Element | null = el;
+  while (node) {
+    const instance: object | null = api.getComponent(node) ?? api.getOwningComponent(node);
+    if (instance) return componentName(instance);
+    node = node.parentElement;
+  }
+  return null;
+}
+
 export function selectorPath(el: HTMLElement): string {
   const parts: string[] = [];
   let node: HTMLElement | null = el;
@@ -141,6 +161,10 @@ export function htmlExcerpt(el: HTMLElement): string {
     clone.innerHTML = `<!-- ${childCount} child element${childCount === 1 ? "" : "s"} omitted -->`;
     html = clone.outerHTML;
   }
+  // Backstop: a single element with a huge attribute (e.g. a data: URI or a
+  // serialized data-* blob) can still blow past the cap with no children to
+  // omit. Hard-truncate so the prompt POSTed to the bridge stays bounded.
+  if (html.length > 1500) html = html.slice(0, 1500) + "…";
   return html;
 }
 

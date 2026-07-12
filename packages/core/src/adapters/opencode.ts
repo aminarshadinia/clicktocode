@@ -25,6 +25,8 @@ export function opencodeAdapter(options: OpenCodeAdapterOptions = {}): ClickAdap
     ...options,
     getOptions: () => ({ sessionId: sessionKey, ...options.getOptions?.() }),
   });
+  // Track the current run so abort() can cancel it server-side.
+  let active: ReturnType<OpenCodeAgentProvider["sendPrompt"]> | null = null;
   return {
     name: "opencode",
     wantsInstruction: true,
@@ -38,7 +40,15 @@ export function opencodeAdapter(options: OpenCodeAdapterOptions = {}): ClickAdap
         instruction || "Improve this element. Infer the intent from the context."
       );
       const handle = provider.sendPrompt(prompt);
-      await handle.done;
+      active = handle;
+      try {
+        await handle.done;
+      } finally {
+        if (active === handle) active = null;
+      }
+    },
+    abort: () => {
+      void active?.abort();
     },
   };
 }

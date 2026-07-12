@@ -3,7 +3,7 @@
  * coding agent. Wraps @clicktocode/core with a Angular component-stack walker.
  */
 import { createPicker, type CreatePickerOptions, type Picker } from "@clicktocode/core";
-import { captureContext } from "./context.js";
+import { captureContext, componentNameForElement } from "./context.js";
 
 export interface ClickToCodeOptions extends Omit<CreatePickerOptions, "captureContext"> {}
 
@@ -17,7 +17,7 @@ export interface ClickToCodeOptions extends Omit<CreatePickerOptions, "captureCo
  * ```
  */
 export function clickToCode(options: ClickToCodeOptions = {}): Picker {
-  return createPicker({ ...options, captureContext });
+  return createPicker({ ...options, captureContext, captureName: componentNameForElement });
 }
 
 export { captureContext } from "./context.js";

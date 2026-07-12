@@ -32,12 +32,34 @@ function findInstance(el: HTMLElement): VueInternalInstance | null {
   return null;
 }
 
-function componentName(instance: VueInternalInstance): string {
+function instanceName(instance: VueInternalInstance): string {
   const t = instance.type;
   if (t?.name) return t.name;
   if (t?.__name) return t.__name;
   const file = t?.__file?.split("/").pop()?.replace(/\.(vue|jsx?|tsx?)$/, "");
   return file || "Anonymous";
+}
+
+/**
+ * Lightweight owner-name lookup for the hover label: walks to the first
+ * non-builtin component owner and returns just its name, skipping the HTML
+ * excerpt, selector path, and props snapshot that captureContext computes.
+ */
+export function componentNameForElement(el: HTMLElement): string | null {
+  const seen = new Set<VueInternalInstance>();
+  let instance = findInstance(el);
+  while (instance && !seen.has(instance)) {
+    seen.add(instance);
+    const name = instanceName(instance);
+    const fileName = instance.type?.__file;
+    const isBuiltin =
+      BUILTIN_COMPONENTS.has(name) ||
+      ROUTER_COMPONENT.test(name) ||
+      (fileName ?? "").includes("node_modules/");
+    if (!isBuiltin) return name;
+    instance = instance.parent ?? null;
+  }
+  return null;
 }
 
 function snapshotValue(value: unknown, depth = 0): unknown {
@@ -73,7 +95,7 @@ export function componentStack(el: HTMLElement): ComponentStackEntry[] {
   let instance = findInstance(el);
   while (instance && !seen.has(instance)) {
     seen.add(instance);
-    const name = componentName(instance);
+    const name = instanceName(instance);
     const fileName = instance.type?.__file;
     const isBuiltin =
       BUILTIN_COMPONENTS.has(name) ||
@@ -133,6 +155,10 @@ export function htmlExcerpt(el: HTMLElement): string {
     clone.innerHTML = `<!-- ${childCount} child element${childCount === 1 ? "" : "s"} omitted -->`;
     html = clone.outerHTML;
   }
+  // Backstop: a single element with a huge attribute (e.g. a data: URI or a
+  // serialized data-* blob) can still blow past the cap with no children to
+  // omit. Hard-truncate so the prompt POSTed to the bridge stays bounded.
+  if (html.length > 1500) html = html.slice(0, 1500) + "…";
   return html;
 }
 

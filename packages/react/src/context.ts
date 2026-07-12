@@ -105,6 +105,27 @@ export function componentStack(el: HTMLElement): ComponentStackEntry[] {
   return stack;
 }
 
+/**
+ * Name-only fast path for the picker's hover label: returns the innermost
+ * non-noise React component owner name for `el`, skipping the htmlExcerpt,
+ * selectorPath, and props work that full context capture does.
+ */
+export function componentNameForElement(el: HTMLElement): string | null {
+  const seen = new Set<FiberNode>();
+  let fiber = findFiber(el);
+  let depth = 0;
+  while (fiber && !seen.has(fiber) && depth < 12) {
+    seen.add(fiber);
+    depth++;
+    const name = componentName(fiber.type);
+    const fileName = fiberFile(fiber);
+    const isNoise = !name || (fileName ?? "").includes("node_modules/");
+    if (!isNoise) return name;
+    fiber = fiber.return;
+  }
+  return null;
+}
+
 export function selectorPath(el: HTMLElement): string {
   const parts: string[] = [];
   let node: HTMLElement | null = el;
@@ -139,6 +160,10 @@ export function htmlExcerpt(el: HTMLElement): string {
     clone.innerHTML = `<!-- ${childCount} child element${childCount === 1 ? "" : "s"} omitted -->`;
     html = clone.outerHTML;
   }
+  // Backstop: a single element with a huge attribute (e.g. a data: URI or a
+  // serialized data-* blob) can still blow past the cap with no children to
+  // omit. Hard-truncate so the prompt POSTed to the bridge stays bounded.
+  if (html.length > 1500) html = html.slice(0, 1500) + "…";
   return html;
 }
 

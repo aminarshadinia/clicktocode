@@ -80,6 +80,11 @@ export interface ClickAdapter {
   send: (context: ClickContext, instruction?: string) => Promise<void>;
   /** Show the inline prompt box after selection and pass the text to send(). */
   wantsInstruction?: boolean;
+  /**
+   * Abort the most recent in-flight `send()`, if the adapter supports it (e.g.
+   * OpenCode cancels the server-side run). Called when the user cancels a grab.
+   */
+  abort?: () => void;
 }
 
 export const DEFAULT_PORT = 6567;

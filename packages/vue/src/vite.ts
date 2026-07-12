@@ -9,3 +9,7 @@ export type { ClickToCodePluginOptions };
 export default function clickToCode(options: ClickToCodePluginOptions = {}) {
   return clickToCodeVite(options);
 }
+
+// Also exported by an unambiguous name for those who prefer a named import
+// (distinct from the runtime `clickToCode` picker in the package root).
+export { clickToCodeVite };

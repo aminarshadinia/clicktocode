@@ -175,6 +175,17 @@ export function startServer(options: StartServerOptions = {}) {
       Connection: "keep-alive",
     });
 
+    // Heartbeat: an SSE comment every 15s keeps the connection and the client's
+    // inactivity watchdog alive during long-running (but healthy) agent work,
+    // so only a genuine stall trips the client-side timeout.
+    const heartbeat = setInterval(() => {
+      try {
+        res.write(":\n\n");
+      } catch {
+        /* connection gone; finish.finally clears this */
+      }
+    }, 15_000);
+
     let sessionId: string | undefined;
     let closed = false;
     const current = { handle: null as ReturnType<AgentBackend["run"]> | null };
@@ -210,6 +221,7 @@ export function startServer(options: StartServerOptions = {}) {
     });
 
     finish.finally(() => {
+      clearInterval(heartbeat);
       if (sessionId) aborts.delete(sessionId);
       res.end();
     });
@@ -281,8 +293,17 @@ export function startServer(options: StartServerOptions = {}) {
       return;
     }
     if (req.method === "POST" && url.pathname === "/api/undo") {
-      getBackend()
-        .undo()
+      readBody(req)
+        .then((raw) => {
+          let sessionKey: string | undefined;
+          try {
+            const parsed = raw ? JSON.parse(raw) : undefined;
+            if (typeof parsed?.sessionId === "string") sessionKey = parsed.sessionId;
+          } catch {
+            /* undo without a session id falls back to the most recent one */
+          }
+          return getBackend().undo(sessionKey);
+        })
         .then((reverted) => {
           if (reverted) {
             res.writeHead(200, { "Content-Type": "application/json" });
@@ -325,6 +346,22 @@ export function startServer(options: StartServerOptions = {}) {
     } catch {
       /* ignore */
     }
+  });
+
+  // Graceful shutdown: without a signal handler, a default SIGTERM/SIGINT
+  // terminates the process immediately and `server.on("close")` never fires —
+  // so the backend (a persistent `opencode serve`) is never torn down and the
+  // pidfile is left behind. Close the server on signal so cleanup runs, then
+  // let the default disposition proceed. Registered per-signal and removed on
+  // close so repeated startServer() calls don't leak listeners.
+  const onSignal = () => {
+    server.close();
+  };
+  process.once("SIGTERM", onSignal);
+  process.once("SIGINT", onSignal);
+  server.on("close", () => {
+    process.removeListener("SIGTERM", onSignal);
+    process.removeListener("SIGINT", onSignal);
   });
 
   return server;

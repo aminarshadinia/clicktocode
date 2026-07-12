@@ -19,8 +19,12 @@ import type { OpenCodeAdapterOptions } from "@clicktocode/react";
 export interface ClickToCodeProps {
   /** Bridge server URL. Default http://127.0.0.1:6567. */
   serverUrl?: string;
-  /** OpenCode options passed on every prompt (agent, model, …). */
-  opencode?: OpenCodeAdapterOptions;
+  /**
+   * OpenCode options passed on every prompt (agent, model, …). `serverUrl` is
+   * omitted here — set it via the top-level `serverUrl` prop so there's one
+   * canonical place for the bridge URL.
+   */
+  opencode?: Omit<OpenCodeAdapterOptions, "serverUrl">;
   /** Also run a clipboard picker on ⌘C. Default true. */
   clipboard?: boolean;
 }
@@ -56,7 +60,10 @@ export function ClickToCode(props: ClickToCodeProps): null {
         );
       }
       (window as unknown as { __opencodeProvider?: unknown }).__opencodeProvider = adapter.provider;
-      dispose = () => pickers.forEach((p) => p.destroy());
+      dispose = () => {
+        pickers.forEach((p) => p.destroy());
+        delete (window as unknown as { __opencodeProvider?: unknown }).__opencodeProvider;
+      };
     });
 
     return () => {

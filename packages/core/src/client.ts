@@ -13,6 +13,13 @@ export interface OpenCodeAgentProviderOptions {
   token?: string;
   /** Per-request OpenCode options (model, agent, directory, session). */
   getOptions?: () => OpenCodeRunOptions;
+  /**
+   * Abort a run if the stream is silent (no events, no heartbeat) for this many
+   * milliseconds, so a stalled agent run doesn't hang the picker forever.
+   * Default 120000 (2 min). The server sends heartbeats to keep healthy
+   * long-running tasks alive.
+   */
+  idleTimeoutMs?: number;
   /** Called on every lifecycle change. */
   onStatusChange?: (status: AgentStatus) => void;
   /** Called for every event streamed back from OpenCode. */
@@ -72,7 +79,13 @@ export function createOpenCodeAgentProvider(
 
     async isAvailable() {
       try {
-        const res = await fetch(`${serverUrl}/health`, { method: "GET" });
+        // Bound the probe: a wedged-but-listening server must not hang the
+        // pre-send gate forever. AbortSignal.timeout is available in all
+        // supported runtimes (Node 18+, modern browsers).
+        const res = await fetch(`${serverUrl}/health`, {
+          method: "GET",
+          signal: AbortSignal.timeout(4000),
+        });
         return res.ok;
       } catch {
         return false;
@@ -80,9 +93,13 @@ export function createOpenCodeAgentProvider(
     },
 
     async undo() {
+      // Scope the undo to this provider's session so concurrent sessions don't
+      // revert each other's edits.
+      const sessionKey = options.getOptions?.().sessionId;
       const res = await fetch(`${serverUrl}/api/undo`, {
         method: "POST",
         headers: headers(),
+        body: JSON.stringify(sessionKey ? { sessionId: sessionKey } : {}),
       });
       return res.ok;
     },
@@ -137,9 +154,26 @@ export function createOpenCodeAgentProvider(
           }
         };
 
+        // Inactivity watchdog: if the stream goes silent for longer than the
+        // idle timeout (no events, no heartbeat), abort rather than hang the
+        // picker forever on a stalled agent run. The server sends periodic SSE
+        // heartbeat comments, so a healthy long-running task keeps this alive.
+        const idleMs = options.idleTimeoutMs ?? 120_000;
+        let watchdog: ReturnType<typeof setTimeout> | undefined;
+        let timedOut = false;
+        const armWatchdog = () => {
+          if (watchdog) clearTimeout(watchdog);
+          watchdog = setTimeout(() => {
+            timedOut = true;
+            controller.abort();
+          }, idleMs);
+        };
+
         try {
+          armWatchdog();
           for (;;) {
             const { value, done: finished } = await reader.read();
+            armWatchdog();
             if (finished) break;
             buffer += decoder.decode(value, { stream: true });
             const frames = buffer.split("\n\n");
@@ -158,11 +192,19 @@ export function createOpenCodeAgentProvider(
           return transcript;
         } catch (err) {
           if (controller.signal.aborted) {
+            // A watchdog-triggered abort is a stall, not a user cancel; surface
+            // it as an error so callers don't mistake it for a clean finish.
+            if (timedOut) {
+              setStatus("error");
+              throw new Error(`OpenCode run timed out after ${idleMs}ms of inactivity`);
+            }
             setStatus("aborted");
             return transcript;
           }
           setStatus("error");
           throw err;
+        } finally {
+          if (watchdog) clearTimeout(watchdog);
         }
       })();
 

@@ -24,8 +24,11 @@ export interface AgentBackend {
     options: OpenCodeRunOptions,
     emit: (event: AgentEvent) => void
   ) => RunHandle;
-  /** Revert the last change. Resolves false when there is nothing to undo. */
-  undo: () => Promise<boolean>;
+  /**
+   * Revert the last change for a session (or the most recent session when no
+   * id is given). Resolves false when there is nothing to undo.
+   */
+  undo: (sessionKey?: string) => Promise<boolean>;
   close: () => void;
 }
 
@@ -87,7 +90,12 @@ export function createSdkBackend(opts: BackendOptions): AgentBackend {
   // Client-supplied session keys → OpenCode session ids, so repeated grabs
   // from the same picker continue one conversation.
   const sessionMap = new Map<string, string>();
-  let lastMessage: { sessionId: string; messageID: string } | null = null;
+  // Last user message id per OpenCode session, so undo reverts the *correct*
+  // session's edits even when several runs (tabs / grabs) share this backend.
+  const lastMessageBySession = new Map<string, string>();
+  // The most recently active session, used when undo() is called without an
+  // explicit session id (the common single-session case).
+  let lastActiveSession: string | null = null;
 
   const boot = (): Promise<OpencodeInstance> => {
     instance ??= (opts.sdkFactory ?? defaultSdkFactory(opts))();
@@ -182,7 +190,8 @@ export function createSdkBackend(opts: BackendOptions): AgentBackend {
               if (info.role === "assistant") assistantMessages.add(info.id);
               else if (info.role === "user" && !userMessageId) {
                 userMessageId = info.id;
-                lastMessage = { sessionId: sid, messageID: info.id };
+                lastMessageBySession.set(sid, info.id);
+                lastActiveSession = sid;
               }
             }
             continue;
@@ -232,15 +241,21 @@ export function createSdkBackend(opts: BackendOptions): AgentBackend {
       };
     },
 
-    async undo() {
-      if (!lastMessage) return false;
+    async undo(sessionKey?: string) {
+      // Resolve which OpenCode session to revert: the one behind the given
+      // client key, else the most recently active session.
+      const sid = sessionKey ? sessionMap.get(sessionKey) : lastActiveSession ?? undefined;
+      if (!sid) return false;
+      const messageID = lastMessageBySession.get(sid);
+      if (!messageID) return false;
       const { client } = await boot();
       await client.session.revert({
-        path: { id: lastMessage.sessionId },
+        path: { id: sid },
         ...(dirQuery ? { query: dirQuery } : {}),
-        body: { messageID: lastMessage.messageID },
+        body: { messageID },
       });
-      lastMessage = null;
+      lastMessageBySession.delete(sid);
+      if (lastActiveSession === sid) lastActiveSession = null;
       return true;
     },
 
@@ -292,6 +307,21 @@ function mapCliLine(line: string): AgentEvent | null {
   }
 }
 
+/**
+ * Quote an argument for the Windows cmd.exe shell. We run the opencode `.cmd`
+ * shim via `shell: true` on Windows, which routes argv through cmd.exe; the
+ * user-controlled prompt must therefore be neutralised against injection.
+ * Wrap in double quotes, escape embedded quotes, and escape cmd metacharacters
+ * so nothing in the prompt is interpreted by the shell.
+ */
+function quoteWinArg(arg: string): string {
+  // Escape cmd metacharacters, then wrap the whole thing in double quotes.
+  const escaped = arg
+    .replace(/(["^&|<>()%!])/g, "^$1")
+    .replace(/"/g, '""');
+  return `"${escaped}"`;
+}
+
 export function createCliBackend(opts: BackendOptions): AgentBackend {
   return {
     kind: "cli",
@@ -309,10 +339,23 @@ export function createCliBackend(opts: BackendOptions): AgentBackend {
       // files outside the configured project root.
       const cwd = opts.directory ?? process.cwd();
 
+      // On Windows, npm installs `opencode` as a `.cmd` shim that Node's raw
+      // spawn can't exec directly (ENOENT). `shell: true` runs it through
+      // cmd.exe so the shim resolves. Because that makes argv go through the
+      // shell, the (user-controlled) prompt must be quoted to avoid injection.
+      const isWindows = process.platform === "win32";
+      const spawnBin = isWindows ? quoteWinArg(bin) : bin;
+      const spawnArgs = isWindows ? args.map(quoteWinArg) : args;
+
       let child: ChildProcess;
       const done = new Promise<void>((resolve) => {
         try {
-          child = spawn(bin, args, { cwd, env: process.env });
+          child = spawn(spawnBin, spawnArgs, {
+            cwd,
+            env: process.env,
+            shell: isWindows,
+            windowsHide: true,
+          });
         } catch (err) {
           emit({ type: "error", message: `Failed to spawn opencode: ${String(err)}` });
           emit({ type: "done", exitCode: 1 });
