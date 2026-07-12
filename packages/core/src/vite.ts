@@ -14,7 +14,7 @@ export interface ClickToCodePluginOptions extends StartServerOptions {}
  * export default defineConfig({ plugins: [vue(), clickToCode()] });
  * ```
  */
-export default function clickToCode(options: ClickToCodePluginOptions = {}) {
+export function clickToCodeVite(options: ClickToCodePluginOptions = {}) {
   let started = false;
   return {
     name: "clicktocode",
@@ -25,3 +25,5 @@ export default function clickToCode(options: ClickToCodePluginOptions = {}) {
     },
   };
 }
+
+export default clickToCodeVite;
