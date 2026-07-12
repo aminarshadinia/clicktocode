@@ -1,0 +1,51 @@
+/**
+ * @clicktocode/nuxt — click an element in your running Nuxt 3 app and hand it
+ * to a coding agent.
+ *
+ * Add it to nuxt.config.ts:
+ *   export default defineNuxtConfig({ modules: ["@clicktocode/nuxt"] })
+ *
+ * The module is dev-only. It starts the bridge server once when the dev server
+ * boots (the `listen` hook — never fires in `nuxt build`) and registers a
+ * client-only plugin that loads the picker after hydration.
+ */
+import { defineNuxtModule, addPlugin, createResolver, useNuxt } from "@nuxt/kit";
+import type { StartServerOptions } from "@clicktocode/core/server";
+
+export interface ClickToCodeModuleOptions extends StartServerOptions {}
+
+/** The Nuxt instance type, sourced from kit without needing a named export. */
+type Nuxt = ReturnType<typeof useNuxt>;
+
+export default defineNuxtModule<ClickToCodeModuleOptions>({
+  meta: {
+    name: "@clicktocode/nuxt",
+    configKey: "clicktocode",
+    compatibility: { nuxt: ">=3.0.0" },
+  },
+  defaults: {} as ClickToCodeModuleOptions,
+  setup(options: ClickToCodeModuleOptions, nuxt: Nuxt) {
+    // Dev only — never wire a code-editing bridge into a production build.
+    if (!nuxt.options.dev) return;
+
+    // (A) Start the bridge once when the dev server boots. `listen` fires only
+    // for `nuxt dev`, so there is no double-fire (unlike a Vite configResolved,
+    // which runs for both the client and SSR builds).
+    nuxt.hook("listen", () => {
+      import("@clicktocode/core/server")
+        .then(({ startServer }) => {
+          startServer({ directory: nuxt.options.rootDir, ...options });
+        })
+        .catch((err) => console.warn("[clicktocode] bridge failed to start:", err));
+    });
+
+    // (B) Register the client-only picker plugin (runs post-hydration only).
+    const { resolve } = createResolver(import.meta.url);
+    addPlugin({ src: resolve("./runtime/plugin.client"), mode: "client" });
+
+    // Make the picker's OpenCode server URL available to the runtime plugin.
+    nuxt.options.runtimeConfig.public.clicktocode = {
+      serverUrl: `http://127.0.0.1:${options.port ?? 6567}`,
+    };
+  },
+});
