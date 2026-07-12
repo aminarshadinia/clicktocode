@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "description": "Click an element in your running app and hand it to a coding agent. Monorepo for @clicktocode/*.",
   "license": "MIT",
-  "author": "Amin Arshadinia",
+  "author": "Amin Arshadinia <Amin.Arshadinia@gmail.com> (https://github.com/aminarshadinia)",
   "type": "module",
   "scripts": {
     "build": "pnpm -r --filter \"./packages/**\" build",

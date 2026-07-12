@@ -303,7 +303,11 @@ export function createCliBackend(opts: BackendOptions): AgentBackend {
       if (options.model) args.push("--model", options.model);
       if (options.agent) args.push("--agent", options.agent);
       if (opts.extraArgs?.length) args.push(...opts.extraArgs);
-      const cwd = options.directory ?? opts.directory ?? process.cwd();
+      // Working directory is server-configured only — never taken from the
+      // per-request (browser-supplied) options. This mirrors the sdk backend
+      // and prevents an allowed local caller from steering the agent to edit
+      // files outside the configured project root.
+      const cwd = opts.directory ?? process.cwd();
 
       let child: ChildProcess;
       const done = new Promise<void>((resolve) => {

@@ -127,6 +127,7 @@ Angular has no Vite config, so start the bridge with a tiny dev script and load 
 
 ```ts
 // main.ts
+import { isDevMode } from "@angular/core";
 import { clickToCode, opencodeAdapter } from "@clicktocode/angular";
 // after bootstrapApplication(...)
 if (isDevMode()) {
@@ -221,14 +222,16 @@ The picker always captures the **DOM excerpt** and a **selector path**. The *com
 | Framework | Component names | Props | Source files | Available in production? |
 |---|---|---|---|---|
 | **Vue / Nuxt** | ✅ | ✅ | ✅ (dev) | dev only |
-| **React / Next** | ✅ | ✅ | dev only | **names yes**, files no |
+| **React / Next** | ✅ | ✅ | dev only | **names usually**¹, files no |
 | **Svelte** | ✅ | ❌ (no instance) | ✅ | dev only |
 | **Angular** | ✅ | ✅ | ❌ (none at runtime) | dev only |
+
+¹ React/Next names come from `fn.name`, which most production minifiers mangle (including Vite's default esbuild). Set a `displayName` on components you want named in prod. This tool is dev-time anyway, so it rarely matters.
 
 Why the differences:
 
 - **Vue / Nuxt** — read from Vue's `__vueParentComponent` dev internals. Full stack with props and `.vue` file paths. Stripped from production builds → empty stack there (which is fine; you use this in dev).
-- **React / Next** — read from the React fiber. Component names survive production minification; source files (`_debugSource`) are dev-only up to React 18, and React 19 exposes names only.
+- **React / Next** — read from the React fiber. Component names usually survive production unless your minifier mangles function names (e.g. Vite's default esbuild) — set a `displayName` to guarantee it; source files (`_debugSource`) are dev-only up to React 18, and React 19 exposes names only.
 - **Svelte** — read from the dev-only `__svelte_meta`. Svelte 5 gives a real component stack with names and files; Svelte 4 gives filenames only. There's no component *instance* reachable from the DOM, so **props are never available**.
 - **Angular** — read from `window.ng` (dev-only). Gives real component instances, so **names and `@Input()` props** — but Angular exposes **no source file** at runtime.
 
@@ -297,7 +300,7 @@ Only run the bridge in local development. Never expose port 6567 publicly.
 You're almost certainly running a production build — the framework internals the walker reads are dev-only. Run your dev server. (You still get the DOM excerpt + selector path in prod.)
 
 **Holding Alt does nothing.**
-The picker didn't load. Check that (a) you're in dev mode, (b) the dynamic `import()` runs (look for `[opencode]` logs or `window.__opencodeProvider` in the console), and (c) for Next, that `<ClickToCode />` is actually rendered and `experimental.instrumentationHook` is `true`.
+The picker didn't load. Check that (a) you're in dev mode, (b) the dynamic `import()` runs (look for `[clicktocode]` logs or `window.__opencodeProvider` in the console), and (c) for Next, that `<ClickToCode />` is actually rendered and `experimental.instrumentationHook` is `true`.
 
 **"is OpenCode installed?" / spawn errors.**
 Install and authenticate the CLI: `npm i -g opencode-ai@latest && opencode auth login`. Or switch to `clipboardAdapter()` to skip OpenCode entirely.

@@ -8,6 +8,7 @@ import {
   DEFAULT_PORT,
   TOKEN_HEADER,
   type AgentEvent,
+  type OpenCodeRunOptions,
   type PromptRequest,
 } from "./types.js";
 import {
@@ -155,6 +156,18 @@ export function startServer(options: StartServerOptions = {}) {
       return;
     }
 
+    // Allowlist the per-request options coming from the browser. Only these
+    // fields are safe for an untrusted-ish local caller to set; anything else
+    // (notably `directory`, which could steer the agent outside the project
+    // root) is dropped. The working directory is server-configured only.
+    const safeOptions: OpenCodeRunOptions = {};
+    const reqOptions = body.options;
+    if (reqOptions && typeof reqOptions === "object") {
+      if (typeof reqOptions.model === "string") safeOptions.model = reqOptions.model;
+      if (typeof reqOptions.agent === "string") safeOptions.agent = reqOptions.agent;
+      if (typeof reqOptions.sessionId === "string") safeOptions.sessionId = reqOptions.sessionId;
+    }
+
     let active = getBackend();
     res.writeHead(200, {
       "Content-Type": "text/event-stream",
@@ -174,7 +187,7 @@ export function startServer(options: StartServerOptions = {}) {
       sendSse(res, event);
     };
 
-    current.handle = active.run(body.prompt, body.options ?? {}, emit);
+    current.handle = active.run(body.prompt, safeOptions, emit);
 
     const finish = current.handle.done.catch(async (err) => {
       // "auto" mode: an sdk run that failed before starting (opencode binary
@@ -189,7 +202,7 @@ export function startServer(options: StartServerOptions = {}) {
         active.close();
         backend = createCliBackend(backendOptions);
         active = backend;
-        current.handle = active.run(body.prompt, body.options ?? {}, emit);
+        current.handle = active.run(body.prompt, safeOptions, emit);
         return current.handle.done;
       }
       sendSse(res, { type: "error", message: String(err) });
@@ -243,23 +256,28 @@ export function startServer(options: StartServerOptions = {}) {
       return;
     }
     if (req.method === "POST" && url.pathname === "/api/abort") {
-      readBody(req).then((raw) => {
-        let sessionId: string | undefined;
-        try {
-          sessionId = JSON.parse(raw)?.sessionId;
-        } catch {
-          /* fall through */
-        }
-        const abort = sessionId ? aborts.get(sessionId) : undefined;
-        if (abort) {
-          abort();
-          aborts.delete(sessionId!);
-          res.writeHead(200, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ aborted: true }));
-        } else {
-          reject(res, 404, "Session not found");
-        }
-      });
+      readBody(req)
+        .then((raw) => {
+          let sessionId: string | undefined;
+          try {
+            sessionId = JSON.parse(raw)?.sessionId;
+          } catch {
+            /* fall through */
+          }
+          const abort = sessionId ? aborts.get(sessionId) : undefined;
+          if (abort) {
+            abort();
+            aborts.delete(sessionId!);
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ aborted: true }));
+          } else {
+            reject(res, 404, "Session not found");
+          }
+        })
+        // A client aborting the socket mid-read rejects readBody; without this
+        // catch that becomes an unhandled rejection and (under Node's default)
+        // crashes the dev process.
+        .catch((err) => reject(res, 500, String(err)));
       return;
     }
     if (req.method === "POST" && url.pathname === "/api/undo") {

@@ -1,10 +1,20 @@
 {
   "name": "@clicktocode/next",
   "version": "0.1.0",
+  "sideEffects": false,
   "description": "Click an element in your running Next.js app and hand it to a coding agent — element picker + OpenCode bridge. App Router and Pages Router.",
-  "keywords": ["next", "nextjs", "react", "devtools", "element-picker", "coding-agent", "opencode", "ai"],
+  "keywords": [
+    "next",
+    "nextjs",
+    "react",
+    "devtools",
+    "element-picker",
+    "coding-agent",
+    "opencode",
+    "ai"
+  ],
   "license": "MIT",
-  "author": "Amin Arshadinia",
+  "author": "Amin Arshadinia <Amin.Arshadinia@gmail.com> (https://github.com/aminarshadinia)",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/aminarshadinia/clicktocode.git",
@@ -18,19 +28,41 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
-      "require": { "types": "./dist/index.d.cts", "default": "./dist/index.cjs" }
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     },
     "./instrumentation": {
-      "import": { "types": "./dist/instrumentation.d.ts", "default": "./dist/instrumentation.js" },
-      "require": { "types": "./dist/instrumentation.d.cts", "default": "./dist/instrumentation.cjs" }
+      "import": {
+        "types": "./dist/instrumentation.d.ts",
+        "default": "./dist/instrumentation.js"
+      },
+      "require": {
+        "types": "./dist/instrumentation.d.cts",
+        "default": "./dist/instrumentation.cjs"
+      }
     },
     "./server": {
-      "import": { "types": "./dist/server.d.ts", "default": "./dist/server.js" },
-      "require": { "types": "./dist/server.d.cts", "default": "./dist/server.cjs" }
+      "import": {
+        "types": "./dist/server.d.ts",
+        "default": "./dist/server.js"
+      },
+      "require": {
+        "types": "./dist/server.d.cts",
+        "default": "./dist/server.cjs"
+      }
     }
   },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsup",
     "test": "vitest run",

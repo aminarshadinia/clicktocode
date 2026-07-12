@@ -2,9 +2,18 @@
   "name": "@clicktocode/nuxt",
   "version": "0.1.0",
   "description": "Click an element in your running Nuxt 3 app and hand it to a coding agent — element picker + OpenCode bridge.",
-  "keywords": ["nuxt", "nuxt-module", "vue", "devtools", "element-picker", "coding-agent", "opencode", "ai"],
+  "keywords": [
+    "nuxt",
+    "nuxt-module",
+    "vue",
+    "devtools",
+    "element-picker",
+    "coding-agent",
+    "opencode",
+    "ai"
+  ],
   "license": "MIT",
-  "author": "Amin Arshadinia",
+  "author": "Amin Arshadinia <Amin.Arshadinia@gmail.com> (https://github.com/aminarshadinia)",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/aminarshadinia/clicktocode.git",
@@ -17,11 +26,21 @@
   "types": "./dist/module.d.ts",
   "exports": {
     ".": {
-      "import": { "types": "./dist/module.d.ts", "default": "./dist/module.js" },
-      "require": { "types": "./dist/module.d.cts", "default": "./dist/module.cjs" }
+      "import": {
+        "types": "./dist/module.d.ts",
+        "default": "./dist/module.js"
+      },
+      "require": {
+        "types": "./dist/module.d.cts",
+        "default": "./dist/module.cjs"
+      }
     }
   },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
@@ -30,9 +49,6 @@
   "dependencies": {
     "@clicktocode/core": "workspace:^",
     "@clicktocode/vue": "workspace:^",
-    "@nuxt/kit": "^3.13.0"
-  },
-  "devDependencies": {
     "@nuxt/kit": "^3.13.0"
   },
   "engines": {

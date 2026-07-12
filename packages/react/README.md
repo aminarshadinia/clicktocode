@@ -23,6 +23,6 @@ if (import.meta.env.DEV) {
 
 Hold <kbd>Alt</kbd>, click an element, describe the change — OpenCode edits your code. Second picker for clipboard: `clickToCode({ adapter: clipboardAdapter(), hotkey: ["Meta", "c"] })`.
 
-**Component stack** is read from the React fiber (`__reactFiber$`) — no devtools extension needed. Works through `memo` and `forwardRef`; component names resolve in dev **and** production, source files in dev builds up to React 18. Needs OpenCode: `npm i -g opencode-ai@latest && opencode auth login` (or use `clipboardAdapter()`).
+**Component stack** is read from the React fiber (`__reactFiber$`) — no devtools extension needed. Works through `memo` and `forwardRef`; component names resolve in dev, and in production too unless your minifier mangles function names (Vite's default esbuild does — set a `displayName` to guarantee it). Source files resolve in dev builds up to React 18. Needs OpenCode: `npm i -g opencode-ai@latest && opencode auth login` (or use `clipboardAdapter()`).
 
 Adapters: `opencodeAdapter`, `clipboardAdapter`, `cursorAdapter`. Built on [`@clicktocode/core`](https://www.npmjs.com/package/@clicktocode/core). MIT.

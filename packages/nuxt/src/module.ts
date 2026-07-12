@@ -17,7 +17,16 @@ export interface ClickToCodeModuleOptions extends StartServerOptions {}
 /** The Nuxt instance type, sourced from kit without needing a named export. */
 type Nuxt = ReturnType<typeof useNuxt>;
 
-export default defineNuxtModule<ClickToCodeModuleOptions>({
+/**
+ * The module's type, derived from `defineNuxtModule` itself so we don't take a
+ * direct dependency on `@nuxt/schema`. Annotating the default export with this
+ * keeps the generated .d.ts self-contained: without it, tsup's dts rollup
+ * inlines the return type and leaks an unbound `TOptions` generic (referencing
+ * names it never imports), producing an invalid declaration.
+ */
+type ClickToCodeNuxtModule = ReturnType<typeof defineNuxtModule<ClickToCodeModuleOptions>>;
+
+const module: ClickToCodeNuxtModule = defineNuxtModule<ClickToCodeModuleOptions>({
   meta: {
     name: "@clicktocode/nuxt",
     configKey: "clicktocode",
@@ -49,3 +58,5 @@ export default defineNuxtModule<ClickToCodeModuleOptions>({
     };
   },
 });
+
+export default module;

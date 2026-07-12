@@ -1,10 +1,17 @@
 {
   "name": "@clicktocode/core",
   "version": "0.1.0",
+  "sideEffects": false,
   "description": "Framework-neutral core for clicktocode: element picker, adapters, and the local OpenCode bridge server.",
-  "keywords": ["devtools", "coding-agent", "opencode", "element-picker", "ai"],
+  "keywords": [
+    "devtools",
+    "coding-agent",
+    "opencode",
+    "element-picker",
+    "ai"
+  ],
   "license": "MIT",
-  "author": "Amin Arshadinia",
+  "author": "Amin Arshadinia <Amin.Arshadinia@gmail.com> (https://github.com/aminarshadinia)",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/aminarshadinia/clicktocode.git",
@@ -21,23 +28,51 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
-      "require": { "types": "./dist/index.d.cts", "default": "./dist/index.cjs" }
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     },
     "./server": {
-      "import": { "types": "./dist/server.d.ts", "default": "./dist/server.js" },
-      "require": { "types": "./dist/server.d.cts", "default": "./dist/server.cjs" }
+      "import": {
+        "types": "./dist/server.d.ts",
+        "default": "./dist/server.js"
+      },
+      "require": {
+        "types": "./dist/server.d.cts",
+        "default": "./dist/server.cjs"
+      }
     },
     "./client": {
-      "import": { "types": "./dist/client.d.ts", "default": "./dist/client.js" },
-      "require": { "types": "./dist/client.d.cts", "default": "./dist/client.cjs" }
+      "import": {
+        "types": "./dist/client.d.ts",
+        "default": "./dist/client.js"
+      },
+      "require": {
+        "types": "./dist/client.d.cts",
+        "default": "./dist/client.cjs"
+      }
     },
     "./vite": {
-      "import": { "types": "./dist/vite.d.ts", "default": "./dist/vite.js" },
-      "require": { "types": "./dist/vite.d.cts", "default": "./dist/vite.cjs" }
+      "import": {
+        "types": "./dist/vite.d.ts",
+        "default": "./dist/vite.js"
+      },
+      "require": {
+        "types": "./dist/vite.d.cts",
+        "default": "./dist/vite.cjs"
+      }
     }
   },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
