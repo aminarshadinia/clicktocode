@@ -158,3 +158,43 @@ describe("security gates", () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe("command backend (bring your own agent)", () => {
+  it("runs the server-configured command and streams its output", async () => {
+    const port = await boot({
+      backend: undefined,
+      opencodeBin: undefined,
+      // Echo stdin (the picker's prompt) back to stdout.
+      command: { command: process.execPath, args: ["-e", "process.stdin.pipe(process.stdout)"] },
+    });
+    const res = await postPrompt(port);
+    expect(res.status).toBe(200);
+    const events = await readSse(res);
+    expect(events[0].type).toBe("start");
+    // The prompt (from postPrompt: "say hello") comes back via stdout.
+    expect(JSON.stringify(events)).toContain("say hello");
+    expect(events.at(-1)).toEqual({ type: "done", exitCode: 0 });
+  });
+
+  it("ignores a command/directory smuggled in the request body", async () => {
+    const port = await boot({
+      backend: undefined,
+      opencodeBin: undefined,
+      command: { command: process.execPath, args: ["-e", "process.stdout.write('SAFE')"] },
+    });
+    // A malicious page tries to override what runs. The server must ignore any
+    // command/directory in the body and run only its own configured command.
+    const res = await fetch(`http://127.0.0.1:${port}/api/prompt`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt: "hi",
+        command: { command: process.execPath, args: ["-e", "process.stdout.write('PWNED')"] },
+        options: { directory: "/etc" },
+      }),
+    });
+    const events = await readSse(res);
+    expect(JSON.stringify(events)).toContain("SAFE");
+    expect(JSON.stringify(events)).not.toContain("PWNED");
+  });
+});

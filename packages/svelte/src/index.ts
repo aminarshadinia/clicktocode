@@ -27,12 +27,15 @@ export {
   clipboardAdapter,
   cursorAdapter,
   opencodeAdapter,
+  commandAdapter,
   createOpenCodeAgentProvider,
   formatPrompt,
   DEFAULT_PORT,
 } from "@clicktocode/core";
 export type {
   OpenCodeAdapterOptions,
+  CommandAdapterOptions,
+  CommandConfig,
   OpenCodeAgentProvider,
   OpenCodeAgentProviderOptions,
   SendPromptHandle,

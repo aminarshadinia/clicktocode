@@ -10,7 +10,36 @@
  */
 import { spawn, type ChildProcess } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import type { AgentEvent, OpenCodeRunOptions } from "./types.js";
+import { StringDecoder } from "node:string_decoder";
+import type { AgentEvent, CommandConfig, OpenCodeRunOptions } from "./types.js";
+
+/**
+ * Terminate a child and its descendants.
+ *
+ * On Windows we spawn through cmd.exe (`shell: true`) so an npm `.cmd` shim
+ * resolves; `child.kill()` there hits only the cmd.exe wrapper and leaves the
+ * real tool (e.g. the node process behind `claude`) running. `taskkill /T`
+ * walks the tree and `/F` forces it, so an abort or timeout actually stops the
+ * agent instead of orphaning it. Elsewhere a signal to the process group isn't
+ * needed for our single-child case, so a plain kill suffices.
+ */
+function killTree(child: ChildProcess): void {
+  if (!child || child.killed || child.pid === undefined) return;
+  if (process.platform === "win32") {
+    // Best-effort: spawn taskkill against the child's PID tree. If it can't be
+    // launched, fall back to the direct kill below.
+    try {
+      spawn("taskkill", ["/pid", String(child.pid), "/T", "/F"], {
+        windowsHide: true,
+        stdio: "ignore",
+      });
+      return;
+    } catch {
+      /* fall through to the direct kill */
+    }
+  }
+  child.kill("SIGTERM");
+}
 
 export interface RunHandle {
   abort: () => void;
@@ -349,6 +378,15 @@ export function createCliBackend(opts: BackendOptions): AgentBackend {
 
       let child: ChildProcess;
       const done = new Promise<void>((resolve) => {
+        // 'error' and 'close' can both fire (e.g. ENOENT); settle exactly once
+        // so the run emits a single terminal 'done'.
+        let settled = false;
+        const finishOnce = (finalize: () => void) => {
+          if (settled) return;
+          settled = true;
+          finalize();
+          resolve();
+        };
         try {
           child = spawn(spawnBin, spawnArgs, {
             cwd,
@@ -382,21 +420,23 @@ export function createCliBackend(opts: BackendOptions): AgentBackend {
           if (text) emit({ type: "error", message: text });
         });
         child.on("error", (err) => {
-          const hint =
-            (err as NodeJS.ErrnoException).code === "ENOENT"
-              ? " — is OpenCode installed? (npm i -g opencode-ai@latest)"
-              : "";
-          emit({ type: "error", message: `${err.message}${hint}` });
-          emit({ type: "done", exitCode: 1 });
-          resolve();
+          finishOnce(() => {
+            const hint =
+              (err as NodeJS.ErrnoException).code === "ENOENT"
+                ? " — is OpenCode installed? (npm i -g opencode-ai@latest)"
+                : "";
+            emit({ type: "error", message: `${err.message}${hint}` });
+            emit({ type: "done", exitCode: 1 });
+          });
         });
         child.on("close", (code) => {
-          if (stdoutBuffer.trim()) {
-            const event = mapCliLine(stdoutBuffer);
-            if (event) emit(event);
-          }
-          emit({ type: "done", exitCode: code ?? 0 });
-          resolve();
+          finishOnce(() => {
+            if (stdoutBuffer.trim()) {
+              const event = mapCliLine(stdoutBuffer);
+              if (event) emit(event);
+            }
+            emit({ type: "done", exitCode: code ?? 0 });
+          });
         });
       });
 
@@ -410,6 +450,184 @@ export function createCliBackend(opts: BackendOptions): AgentBackend {
 
     async undo() {
       return false; // requires the sdk backend's session bookkeeping
+    },
+
+    close() {},
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Command backend — bring your own agent
+
+const PROMPT_PLACEHOLDER = "{prompt}";
+
+/**
+ * A generic "run any command" backend: spawns a server-configured command for
+ * each grab, feeds it the prompt, and tails its output back to the browser.
+ *
+ * This is the agent-neutral escape hatch. OpenCode is just one instance of it —
+ * `{ command: "opencode", args: ["run"] }` reproduces the cli backend. Point it
+ * at Claude Code, your own script, a bug-filer, anything: the picker doesn't
+ * care what runs, only that it receives the element context as a prompt.
+ *
+ * Delivery: if `{prompt}` appears in the command or any arg it is substituted
+ * there; otherwise the prompt is written to the process's stdin. Because the
+ * command is fixed server-side, the prompt is the only browser-controlled
+ * input, and (unless the placeholder is used) it never touches argv — so there
+ * is no shell-injection surface even for adversarial prompts.
+ */
+export function createCommandBackend(config: CommandConfig, opts: BackendOptions = {}): AgentBackend {
+  const timeoutMs = config.timeoutMs ?? 300_000;
+
+  return {
+    kind: "cli",
+
+    run(prompt, _options, emit) {
+      const sessionId = randomUUID();
+      const cwd = config.cwd ?? opts.directory ?? process.cwd();
+
+      // Substitute {prompt} into command/args where present. If it appears
+      // anywhere, the prompt goes there and NOT to stdin; otherwise it's piped
+      // to stdin (the default, and the injection-safe path).
+      const rawArgs = config.args ?? [];
+      const usesPlaceholder =
+        config.command.includes(PROMPT_PLACEHOLDER) ||
+        rawArgs.some((a) => a.includes(PROMPT_PLACEHOLDER));
+      const bin = config.command.split(PROMPT_PLACEHOLDER).join(prompt);
+      const args = rawArgs.map((a) => a.split(PROMPT_PLACEHOLDER).join(prompt));
+
+      // On Windows an npm-installed CLI is often a `.cmd` shim that raw spawn
+      // can't exec (ENOENT). Route through cmd.exe and quote every arg so the
+      // (potentially prompt-bearing) argv can't be reinterpreted by the shell.
+      const isWindows = process.platform === "win32";
+      const spawnBin = isWindows ? quoteWinArg(bin) : bin;
+      const spawnArgs = isWindows ? args.map(quoteWinArg) : args;
+
+      let child: ChildProcess;
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      let timedOut = false;
+
+      const done = new Promise<void>((resolve) => {
+        // A spawn failure emits BOTH 'error' and 'close'; without this guard the
+        // run would emit two terminal 'done' events (and the second's exit code
+        // would clobber the first). Settle exactly once.
+        let settled = false;
+        const finishOnce = (finalize: () => void) => {
+          if (settled) return;
+          settled = true;
+          if (timer) clearTimeout(timer);
+          finalize();
+          resolve();
+        };
+
+        try {
+          child = spawn(spawnBin, spawnArgs, {
+            cwd,
+            env: config.env ? { ...process.env, ...config.env } : process.env,
+            shell: isWindows,
+            windowsHide: true,
+            // Pipe stdin only when we're feeding the prompt that way; otherwise
+            // inherit nothing so the child doesn't block waiting on a tty.
+            stdio: usesPlaceholder ? ["ignore", "pipe", "pipe"] : ["pipe", "pipe", "pipe"],
+          });
+        } catch (err) {
+          emit({ type: "error", message: `Failed to spawn "${config.command}": ${String(err)}` });
+          emit({ type: "done", exitCode: 1 });
+          resolve();
+          return;
+        }
+
+        emit({ type: "start", sessionId });
+        if (opts.verbose !== false) {
+          console.log(`[clicktocode] session ${sessionId} → ${config.command} …`);
+        }
+
+        if (timeoutMs > 0) {
+          timer = setTimeout(() => {
+            timedOut = true;
+            killTree(child);
+          }, timeoutMs);
+        }
+
+        // Feed the prompt via stdin unless it was substituted into argv.
+        if (!usesPlaceholder && child.stdin) {
+          child.stdin.on("error", () => {
+            /* EPIPE if the child exits before reading — ignore */
+          });
+          child.stdin.write(prompt);
+          child.stdin.end();
+        }
+
+        // Raw stdout tail: stream output straight through as text, line by line,
+        // with no format assumptions. This is the whole point of the command
+        // backend — it works with any tool's human-readable output. We emit
+        // live `delta`s for the streaming UI and accumulate the whole thing so
+        // a single `message` (the transcript the run resolves with) is flushed
+        // at the end, matching the sdk backend's contract.
+        //
+        // Decode through a StringDecoder, not chunk.toString(): a multi-byte
+        // UTF-8 character (emoji, CJK) can be split across two data events, and
+        // decoding each Buffer independently would corrupt it into U+FFFD. The
+        // decoder holds the trailing partial bytes until the next chunk.
+        const outDecoder = new StringDecoder("utf8");
+        const errDecoder = new StringDecoder("utf8");
+        let stdoutBuffer = "";
+        let transcript = "";
+        const streamText = (text: string) => {
+          if (!text) return;
+          transcript += text;
+          emit({ type: "delta", text });
+        };
+        child.stdout?.on("data", (chunk: Buffer) => {
+          stdoutBuffer += outDecoder.write(chunk);
+          const lines = stdoutBuffer.split("\n");
+          stdoutBuffer = lines.pop() ?? "";
+          for (const line of lines) streamText(line + "\n");
+        });
+        child.stderr?.on("data", (chunk: Buffer) => {
+          // Many CLIs log progress to stderr; surface it as a delta rather than
+          // an error so it shows in the transcript. Genuine failures still land
+          // via a non-zero exit code below.
+          streamText(errDecoder.write(chunk));
+        });
+
+        child.on("error", (err) => {
+          finishOnce(() => {
+            const hint =
+              (err as NodeJS.ErrnoException).code === "ENOENT"
+                ? ` — is "${config.command}" installed and on PATH?`
+                : "";
+            emit({ type: "error", message: `${err.message}${hint}` });
+            emit({ type: "done", exitCode: 1 });
+          });
+        });
+        child.on("close", (code) => {
+          finishOnce(() => {
+            // Flush any bytes the decoder is still holding, then the tail line.
+            stdoutBuffer += outDecoder.end() + errDecoder.end();
+            if (stdoutBuffer) streamText(stdoutBuffer);
+            if (transcript.trim()) emit({ type: "message", text: transcript });
+            if (timedOut) {
+              emit({ type: "error", message: `Command timed out after ${timeoutMs}ms` });
+            }
+            emit({ type: "done", exitCode: code ?? (timedOut ? 124 : 0) });
+          });
+        });
+      });
+
+      return {
+        done,
+        abort: () => {
+          if (timer) clearTimeout(timer);
+          killTree(child);
+        },
+      };
+    },
+
+    async undo() {
+      // No session bookkeeping — an arbitrary command has no revert protocol.
+      // Undo is an OpenCode-sdk-backend feature.
+      return false;
     },
 
     close() {},

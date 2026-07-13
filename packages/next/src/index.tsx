@@ -79,6 +79,7 @@ export function ClickToCode(props: ClickToCodeProps): null {
 // Re-export the framework-neutral surface for advanced use.
 export {
   opencodeAdapter,
+  commandAdapter,
   clipboardAdapter,
   cursorAdapter,
   createOpenCodeAgentProvider,
@@ -87,6 +88,8 @@ export {
 } from "@clicktocode/react";
 export type {
   OpenCodeAdapterOptions,
+  CommandAdapterOptions,
+  CommandConfig,
   ClickAdapter,
   ClickContext,
   AgentEvent,

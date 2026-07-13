@@ -1,6 +1,6 @@
 # @clicktocode/core
 
-Framework-neutral core for [clicktocode](https://github.com/aminarshadinia/clicktocode): the element picker, agent adapters (OpenCode, clipboard, Cursor), the overlay UI, the OpenCode client, and the local bridge server that drives the OpenCode CLI.
+Framework-neutral core for [clicktocode](https://github.com/aminarshadinia/clicktocode): the element picker, agent adapters (OpenCode, bring-your-own-agent, clipboard, Cursor), the overlay UI, the OpenCode client, and the local bridge server that drives the OpenCode CLI — or any command you configure.
 
 **You normally don't install this directly.** Install the package for your framework, which pulls core in automatically:
 

@@ -16,25 +16,32 @@ export default defineNuxtPlugin(() => {
   // @ts-expect-error — import.meta.dev is a Nuxt/Vite compile-time flag.
   if (!import.meta.dev) return;
 
-  const config = useRuntimeConfig().public.clicktocode as { serverUrl?: string } | undefined;
+  const config = useRuntimeConfig().public.clicktocode as
+    | { serverUrl?: string; adapter?: "opencode" | "command"; adapterName?: string }
+    | undefined;
 
-  import("@clicktocode/vue").then(({ clickToCode, opencodeAdapter, clipboardAdapter }) => {
-    const adapter = opencodeAdapter({
-      serverUrl: config?.serverUrl,
-      getOptions: () => ({ agent: "build" }),
-    });
-    const pickers = [
-      clickToCode({ adapter }), // hold Alt
-      clickToCode({ adapter: clipboardAdapter(), hotkey: ["Meta", "c"], holdDuration: 500 }), // hold ⌘C
-    ];
-    (window as unknown as { __opencodeProvider?: unknown }).__opencodeProvider = adapter.provider;
+  import("@clicktocode/vue").then(
+    ({ clickToCode, opencodeAdapter, commandAdapter, clipboardAdapter }) => {
+      // Pick the primary (Alt-hold) adapter. "command" streams to whatever the
+      // bridge's `command` runs (bring your own agent); "opencode" (default)
+      // uses the OpenCode CLI. Both hit the same bridge.
+      const adapter =
+        config?.adapter === "command"
+          ? commandAdapter({ serverUrl: config?.serverUrl, name: config?.adapterName })
+          : opencodeAdapter({ serverUrl: config?.serverUrl, getOptions: () => ({ agent: "build" }) });
+      const pickers = [
+        clickToCode({ adapter }), // hold Alt
+        clickToCode({ adapter: clipboardAdapter(), hotkey: ["Meta", "c"], holdDuration: 500 }), // hold ⌘C
+      ];
+      (window as unknown as { __opencodeProvider?: unknown }).__opencodeProvider = adapter.provider;
 
-    // Tear down on HMR so an in-place plugin re-run doesn't stack duplicate
-    // listeners and overlay hosts.
-    // @ts-expect-error — import.meta.hot is a Vite/Nuxt dev-only global.
-    import.meta.hot?.dispose(() => {
-      pickers.forEach((p) => p.destroy());
-      delete (window as unknown as { __opencodeProvider?: unknown }).__opencodeProvider;
-    });
-  });
+      // Tear down on HMR so an in-place plugin re-run doesn't stack duplicate
+      // listeners and overlay hosts.
+      // @ts-expect-error — import.meta.hot is a Vite/Nuxt dev-only global.
+      import.meta.hot?.dispose(() => {
+        pickers.forEach((p) => p.destroy());
+        delete (window as unknown as { __opencodeProvider?: unknown }).__opencodeProvider;
+      });
+    }
+  );
 });

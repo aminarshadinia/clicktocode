@@ -87,6 +87,49 @@ export interface ClickAdapter {
   abort?: () => void;
 }
 
+/**
+ * A server-configured command to run for each grab — the "bring your own agent"
+ * backend. The command is defined ONLY on the server (never sent from the
+ * browser), which is the security boundary: the page can supply the prompt, but
+ * not what runs.
+ *
+ * The picker's prompt (instruction + captured element context) is delivered to
+ * the command in one of two ways:
+ *
+ * - **stdin** (default): the prompt is written to the process's standard input.
+ *   Works with any tool that reads a prompt from stdin, e.g. `claude --print`,
+ *   `opencode run`, or your own script.
+ * - **`{prompt}` placeholder**: if the string `{prompt}` appears in `command`
+ *   or any `args` entry, it is replaced with the prompt and nothing is written
+ *   to stdin. Use this for tools that take the prompt as an argument.
+ *
+ * ```ts
+ * // Claude Code, prompt on stdin (default):
+ * { command: "claude", args: ["--print"] }
+ *
+ * // A tool that takes the prompt as an argument, via placeholder:
+ * { command: "my-agent", args: ["--task", "{prompt}"] }
+ * ```
+ */
+export interface CommandConfig {
+  /** Executable to run, e.g. "claude", "opencode", or an absolute path. */
+  command: string;
+  /**
+   * Arguments passed to the command. If any entry contains "{prompt}", the
+   * prompt is substituted there instead of being written to stdin.
+   */
+  args?: string[];
+  /** Working directory. Defaults to the server's configured `directory`. */
+  cwd?: string;
+  /** Extra environment variables, merged over the server process's env. */
+  env?: Record<string, string>;
+  /**
+   * Kill the command if it runs longer than this many milliseconds. Default
+   * 300000 (5 min). Set to 0 to disable.
+   */
+  timeoutMs?: number;
+}
+
 export const DEFAULT_PORT = 6567;
 export const DEFAULT_HOST = "127.0.0.1";
 

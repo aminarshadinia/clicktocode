@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clickToCode, captureContext, opencodeAdapter, clipboardAdapter } from "../src/index.js";
+import { clickToCode, captureContext, opencodeAdapter, commandAdapter, clipboardAdapter } from "../src/index.js";
 
 describe("@clicktocode/vue surface", () => {
   it("exports clickToCode and the Vue walker", () => {
@@ -9,6 +9,7 @@ describe("@clicktocode/vue surface", () => {
 
   it("re-exports core adapters", () => {
     expect(typeof opencodeAdapter).toBe("function");
+    expect(typeof commandAdapter).toBe("function");
     expect(typeof clipboardAdapter).toBe("function");
   });
 

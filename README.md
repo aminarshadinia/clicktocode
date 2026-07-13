@@ -9,7 +9,7 @@ Works with **Vue, React, Svelte, Angular, Next.js (App + Pages Router), and Nuxt
 - [How it works](#how-it-works)
 - [Quick start](#quick-start) — pick your framework
 - [What you get per framework](#what-you-get-per-framework) — the capability matrix
-- [Adapters](#adapters) — OpenCode, clipboard, Cursor, or your own
+- [Adapters](#adapters) — OpenCode, your own agent (Claude Code, …), clipboard, Cursor, or fully custom
 - [Security](#security)
 - [Troubleshooting / FAQ](#troubleshooting--faq)
 
@@ -244,16 +244,74 @@ In every framework, an **empty component stack almost always means you're runnin
 An adapter decides where a grabbed element goes. Import them from your framework package:
 
 ```ts
-import { opencodeAdapter, clipboardAdapter, cursorAdapter } from "@clicktocode/vue";
+import { opencodeAdapter, commandAdapter, clipboardAdapter, cursorAdapter } from "@clicktocode/vue";
 ```
 
 | Adapter | What it does |
 |---|---|
 | `opencodeAdapter(opts)` | Streams the element + your instruction to the OpenCode CLI through the bridge. The default. |
+| `commandAdapter(opts)` | Bring your own agent — runs whatever command the bridge is configured with (Claude Code, your own script, …) and streams its output back. See below. |
 | `clipboardAdapter()` | Copies the element context to your clipboard — paste into any agent. No bridge/OpenCode needed. |
 | `cursorAdapter()` | Opens Cursor with the context + instruction via its deeplink. |
 
 `opencodeAdapter` options: `serverUrl` (default `http://127.0.0.1:6567`), `getOptions: () => ({ agent, model })`, `onEvent`, `onStatusChange`, and `token` (see Security).
+
+### Bring your own agent (`commandAdapter`)
+
+Not tied to OpenCode. Point clicktocode at **any command** — Claude Code, your own script, anything that reads a prompt and writes output — and it becomes the thing your grabs drive. Same picker, same overlay; only the last step changes.
+
+Two halves:
+
+1. **Server** decides *what runs* (the security boundary — the browser can never choose this):
+
+   ```ts
+   import { startServer } from "@clicktocode/core/server";
+
+   // Claude Code — prompt piped to stdin (the default):
+   startServer({ command: { command: "claude", args: ["--print"] } });
+   ```
+
+   With the Vite plugin, pass it the same way: `clickToCode({ command: { command: "claude", args: ["--print"] } })`. In Next, pass it to `registerClickToCode({ command: … })`; in Nuxt, as a module option.
+
+2. **Browser** uses `commandAdapter` (or just keep `opencodeAdapter` — both POST to the same bridge; the adapter is only a label):
+
+   ```ts
+   clickToCode({ adapter: commandAdapter({ name: "claude" }) });
+   ```
+
+   **Nuxt** auto-wires the picker for you, so instead of calling `clickToCode`
+   yourself you configure both halves in `nuxt.config.ts`:
+
+   ```ts
+   export default defineNuxtConfig({
+     modules: ["@clicktocode/nuxt"],
+     clicktocode: {
+       command: { command: "claude", args: ["--print"] }, // what runs (server)
+       adapter: "command",                                 // use it (browser)
+       adapterName: "claude",                              // label in the picker
+     },
+   });
+   ```
+
+**Prompt delivery.** By default the prompt (your instruction + the captured element context) is written to the command's **stdin**. If you'd rather pass it as an argument, put `{prompt}` in the `command` or any `args` entry and it's substituted there instead:
+
+```ts
+startServer({ command: { command: "my-agent", args: ["--task", "{prompt}"] } });
+```
+
+Stdin is the default because it's injection-safe: the prompt never touches the shell's argv. `CommandConfig` also takes `cwd`, `env`, and `timeoutMs` (default 5 min).
+
+**It's not just AI.** Because the command is arbitrary, the same "point at an element → do something" pipeline drives non-AI workflows too — the element context is just piped to a program on stdin. A couple of ideas:
+
+```ts
+// File a bug from any element you can point at — the context becomes the ticket body:
+startServer({ command: { command: "gh", args: ["issue", "create", "--title", "UI bug", "--body-file", "-"] } });
+
+// Run your own script — jump to source, log to analytics, add a TODO, whatever:
+startServer({ command: { command: "node", args: ["scripts/on-grab.mjs"] } });
+```
+
+Point at any element, wire up any workflow. AI editing is just the first one.
 
 ### Write your own adapter
 

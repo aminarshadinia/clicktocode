@@ -12,7 +12,22 @@
 import { defineNuxtModule, addPlugin, createResolver, useNuxt } from "@nuxt/kit";
 import type { StartServerOptions } from "@clicktocode/core/server";
 
-export interface ClickToCodeModuleOptions extends StartServerOptions {}
+export interface ClickToCodeModuleOptions extends StartServerOptions {
+  /**
+   * Which browser adapter the auto-registered picker uses for the Alt-hold grab.
+   *
+   * - `"opencode"` (default): stream to the OpenCode CLI.
+   * - `"command"`: stream to whatever the bridge's `command` runs (bring your
+   *   own agent — e.g. Claude Code). Pair this with the server `command` option.
+   *
+   * Both post to the same bridge, so `"opencode"` still works when a custom
+   * `command` is set; `"command"` exists so the picker's label matches your
+   * agent. See the README's "Bring your own agent" section.
+   */
+  adapter?: "opencode" | "command";
+  /** Label shown by the picker when `adapter: "command"`. Default "agent". */
+  adapterName?: string;
+}
 
 /** The Nuxt instance type, sourced from kit without needing a named export. */
 type Nuxt = ReturnType<typeof useNuxt>;
@@ -37,13 +52,17 @@ const module: ClickToCodeNuxtModule = defineNuxtModule<ClickToCodeModuleOptions>
     // Dev only — never wire a code-editing bridge into a production build.
     if (!nuxt.options.dev) return;
 
+    // Separate the browser-only selectors from the server options so the
+    // bridge never receives keys it doesn't understand.
+    const { adapter = "opencode", adapterName, ...serverOptions } = options;
+
     // (A) Start the bridge once when the dev server boots. `listen` fires only
     // for `nuxt dev`, so there is no double-fire (unlike a Vite configResolved,
     // which runs for both the client and SSR builds).
     nuxt.hook("listen", () => {
       import("@clicktocode/core/server")
         .then(({ startServer }) => {
-          startServer({ directory: nuxt.options.rootDir, ...options });
+          startServer({ directory: nuxt.options.rootDir, ...serverOptions });
         })
         .catch((err) => console.warn("[clicktocode] bridge failed to start:", err));
     });
@@ -52,9 +71,11 @@ const module: ClickToCodeNuxtModule = defineNuxtModule<ClickToCodeModuleOptions>
     const { resolve } = createResolver(import.meta.url);
     addPlugin({ src: resolve("./runtime/plugin.client"), mode: "client" });
 
-    // Make the picker's OpenCode server URL available to the runtime plugin.
+    // Expose the bridge URL and the chosen adapter to the runtime plugin.
     nuxt.options.runtimeConfig.public.clicktocode = {
       serverUrl: `http://127.0.0.1:${options.port ?? 6567}`,
+      adapter,
+      ...(adapterName ? { adapterName } : {}),
     };
   },
 });

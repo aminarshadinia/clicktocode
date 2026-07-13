@@ -8,11 +8,13 @@ import {
   DEFAULT_PORT,
   TOKEN_HEADER,
   type AgentEvent,
+  type CommandConfig,
   type OpenCodeRunOptions,
   type PromptRequest,
 } from "./types.js";
 import {
   createCliBackend,
+  createCommandBackend,
   createSdkBackend,
   type AgentBackend,
   type BackendOptions,
@@ -26,8 +28,23 @@ export interface StartServerOptions extends BackendOptions {
    * (structured events, session continuity, undo); "cli" spawns
    * `opencode run` per prompt. "auto" (default) tries the sdk and falls back
    * to the cli on failure.
+   *
+   * Ignored when `command` is set — a custom command takes over entirely.
    */
   backend?: "auto" | "sdk" | "cli";
+  /**
+   * Bring your own agent. When set, every grab runs THIS command instead of
+   * OpenCode: the picker's prompt is delivered via stdin (or a `{prompt}`
+   * placeholder), and the command's output is streamed back to the browser.
+   * See `CommandConfig`. The command lives only here on the server — the
+   * browser can never choose or change what runs, which is the security
+   * boundary that makes "run an arbitrary command" safe.
+   *
+   * ```ts
+   * startServer({ command: { command: "claude", args: ["--print"] } });
+   * ```
+   */
+  command?: CommandConfig;
   /**
    * Browser origins allowed to call the API. Any localhost/127.0.0.1 origin
    * is allowed by default. Requests without an Origin header (curl, local
@@ -135,8 +152,9 @@ export function startServer(options: StartServerOptions = {}) {
   // opencode server, so closing it mid-flight would break them.
   let sdkProven = false;
   const getBackend = (): AgentBackend => {
-    backend ??=
-      options.backend === "cli"
+    backend ??= options.command
+      ? createCommandBackend(options.command, backendOptions)
+      : options.backend === "cli"
         ? createCliBackend(backendOptions)
         : createSdkBackend(backendOptions);
     return backend;

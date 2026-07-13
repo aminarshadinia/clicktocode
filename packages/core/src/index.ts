@@ -11,6 +11,7 @@ export { formatPrompt } from "./format.js";
 export { clipboardAdapter } from "./adapters/clipboard.js";
 export { cursorAdapter } from "./adapters/cursor.js";
 export { opencodeAdapter, type OpenCodeAdapterOptions } from "./adapters/opencode.js";
+export { commandAdapter, type CommandAdapterOptions } from "./adapters/command.js";
 export { createOpenCodeAgentProvider } from "./client.js";
 export type {
   OpenCodeAgentProvider,
@@ -20,6 +21,7 @@ export type {
 export type {
   AgentEvent,
   AgentStatus,
+  CommandConfig,
   OpenCodeRunOptions,
   PromptRequest,
   ClickAdapter,

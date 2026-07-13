@@ -1,6 +1,6 @@
 {
   "name": "@clicktocode/next",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "sideEffects": false,
   "description": "Click an element in your running Next.js app and hand it to a coding agent — element picker + OpenCode bridge. App Router and Pages Router.",
   "keywords": [

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ClickToCode, opencodeAdapter, clipboardAdapter } from "../src/index.js";
+import { ClickToCode, opencodeAdapter, commandAdapter, clipboardAdapter } from "../src/index.js";
 import { registerClickToCode, register } from "../src/instrumentation.js";
 
 describe("@clicktocode/next surface", () => {

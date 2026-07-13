@@ -86,15 +86,40 @@ export function createOverlay(): OverlayHandles {
         const input = document.createElement("textarea");
         input.placeholder = placeholder;
         input.rows = 2;
-        input.style.cssText = `width:100%;box-sizing:border-box;border:none;outline:none;resize:none;font:13px ${FONT};color:#064e3b;background:transparent;`;
+        // Auto-grow: the box hugs its content up to a cap, then scrolls. Start
+        // at 2 rows (~36px); grow to at most MAX_INPUT_H, after which overflow
+        // scrolls inside the textarea rather than pushing the card off-screen.
+        // (No manual resize grip: a textarea's native resize is itself bounded
+        // by max-height, so a grip couldn't exceed the cap anyway — auto-grow
+        // to the cap plus scroll is the whole behavior.)
+        const MAX_INPUT_H = 132; // ~7 lines
+        input.style.cssText = `display:block;width:100%;box-sizing:border-box;border:none;outline:none;resize:none;overflow-y:hidden;min-height:36px;max-height:${MAX_INPUT_H}px;font:13px/1.4 ${FONT};color:#064e3b;background:transparent;`;
+        const autoGrow = () => {
+          // Reset first so the box can shrink when text is deleted, then size to
+          // fit the content (capped). Toggle the scrollbar only past the cap.
+          input.style.height = "auto";
+          const next = Math.min(input.scrollHeight, MAX_INPUT_H);
+          input.style.height = `${next}px`;
+          input.style.overflowY = input.scrollHeight > MAX_INPUT_H ? "auto" : "hidden";
+        };
+        input.addEventListener("input", autoGrow);
         const hint = document.createElement("div");
-        hint.textContent = "Enter to send · Esc to cancel";
-        hint.style.cssText = "font-size:10px;color:#6ee7b7;margin-top:4px;";
+        // "Enter" / "Esc" read as keys (darker, medium weight); the connective
+        // text stays lighter. #059669 (emerald-600) clears contrast on white,
+        // unlike the old near-invisible mint.
+        const key = (t: string) => `<b style="font-weight:600;color:#047857">${t}</b>`;
+        hint.innerHTML = `${key("Enter")} to send · ${key("Esc")} to cancel`;
+        hint.style.cssText = "font-size:10px;color:#059669;margin-top:5px;";
         wrap.append(input, hint);
         root.appendChild(wrap);
         input.focus();
+        autoGrow();
 
+        let done = false;
         const finish = (value: string | null) => {
+          if (done) return;
+          done = true;
+          document.removeEventListener("pointerdown", onOutsidePointerDown, true);
           wrap.remove();
           if (promptWrap === wrap) promptWrap = null;
           resolve(value);
@@ -108,11 +133,20 @@ export function createOverlay(): OverlayHandles {
             finish(null);
           }
         });
-        input.addEventListener("blur", () => {
-          // Give the click a tick in case it lands back on the input.
-          setTimeout(() => {
-            if (promptWrap === wrap && document.activeElement !== input) finish(null);
-          }, 150);
+        // Cancel on a click genuinely OUTSIDE the card — not on blur. A blur
+        // fires for benign reasons (dragging the resize grip, clicking the
+        // scrollbar, switching windows, devtools) and was tearing the card down
+        // the instant the user interacted with it. An explicit outside-pointer
+        // check is precise: clicks within the card (including the grip) keep it
+        // open. Capture phase + composedPath so it works across the shadow root.
+        const onOutsidePointerDown = (e: PointerEvent) => {
+          const path = e.composedPath();
+          if (!path.includes(wrap)) finish(null);
+        };
+        // Defer registration to the next frame so the click that opened the
+        // prompt doesn't immediately close it.
+        requestAnimationFrame(() => {
+          if (!done) document.addEventListener("pointerdown", onOutsidePointerDown, true);
         });
       });
     },
