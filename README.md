@@ -299,6 +299,15 @@ Two halves:
    });
    ```
 
+**Other agents (GPT, Gemini, Aider, local models, …).** clicktocode doesn't care *which* agent runs — anything with a command-line entry point works. There's no single "GPT CLI", so pick a tool that wraps the model you want: [Aider](https://aider.chat) (GPT, Claude, local models via Ollama), the Gemini CLI, an OpenAI-backed script of your own, etc. Point the `command` at it the same way.
+
+The one rule that holds for **every** agent — and the thing that trips people up — is that it must run in a **fully non-interactive, auto-approve mode**, or it hangs: there's no terminal for the picker to answer a "run this? / apply this edit?" prompt. That's two things to find in your tool's `--help`:
+
+- a **headless/print** flag (Claude `--print`, Aider `--message`, most tools have one) so it reads the prompt and exits instead of opening a REPL, and
+- an **auto-confirm** flag (Claude `--permission-mode acceptEdits`, Aider `--yes`) so it applies changes without stopping to ask.
+
+Check your agent's own `--help` for the exact names — they differ per tool and change between versions. If a grab starts but never finishes, a missing auto-confirm flag is the first thing to suspect.
+
 **Prompt delivery.** By default the prompt (your instruction + the captured element context) is written to the command's **stdin**. If you'd rather pass it as an argument, put `{prompt}` in the `command` or any `args` entry and it's substituted there instead:
 
 ```ts
