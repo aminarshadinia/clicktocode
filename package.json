@@ -10,7 +10,7 @@
     "build": "pnpm -r --filter \"./packages/**\" build",
     "test": "pnpm -r --filter \"./packages/**\" test",
     "typecheck": "pnpm -r --filter \"./packages/**\" typecheck",
-    "check": "pnpm run typecheck && pnpm run test && pnpm run build",
+    "check": "pnpm run build && pnpm run typecheck && pnpm run test",
     "publish:all": "pnpm run check && pnpm -r publish"
   },
   "devDependencies": {
