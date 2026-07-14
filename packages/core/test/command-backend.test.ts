@@ -53,6 +53,13 @@ describe("command backend", () => {
     expect(events.at(-1)).toEqual({ type: "done", exitCode: 0 });
   });
 
+  it("rejects a {prompt} placeholder in the command itself", () => {
+    // The executable must be fixed config — substituting browser-controlled
+    // text into it would let the prompt choose WHAT runs.
+    expect(() => createCommandBackend({ command: "{prompt}" })).toThrow(/not allowed in 'command'/);
+    expect(() => createCommandBackend({ command: "wrapper-{prompt}" })).toThrow(/args/);
+  });
+
   it("does NOT feed stdin in placeholder mode (no double-delivery)", async () => {
     // Probe prints argv[1] and then whatever it reads from stdin. In placeholder
     // mode stdin is set to "ignore", so the child sees no stdin data — the

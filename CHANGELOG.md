@@ -4,6 +4,33 @@ All notable changes to the clicktocode packages are documented here. The
 packages share a version, so an entry applies to every `@clicktocode/*` package
 unless noted.
 
+## Unreleased
+
+### Fixed
+
+- **Windows: aborting an OpenCode CLI run now kills the whole process tree.**
+  The command backend already did this; the cli backend's abort still killed
+  only the cmd.exe wrapper, orphaning the real opencode process.
+- **`{prompt}` is no longer substituted into `command`.** The placeholder is
+  honored only in `args`; a config with `{prompt}` in the executable itself is
+  rejected with a clear error at `startServer()` boot (fail-fast, not a 500 on
+  the first grab). The executable must be fixed server config — never derived
+  from browser-controlled input.
+- Destroying the picker (or opening a new prompt) while the instruction box is
+  open now settles the pending prompt immediately instead of leaving its
+  outside-click listener dangling until the next click.
+
+### Changed
+
+- The agent provider's `name` is configurable (`OpenCodeAgentProviderOptions.name`,
+  type widened from `"opencode"` to `string`); `commandAdapter` labels its
+  provider with the adapter name so a Claude/custom setup doesn't show up as
+  "opencode" in devtools. The Nuxt plugin exposes `window.__clicktocodeProvider`
+  (with `__opencodeProvider` kept as an alias).
+- All packages declare `publishConfig.access: public`; a root `publish:all`
+  script (check + `pnpm -r publish`) encodes the release process; CI runs
+  typecheck + tests + build on every push/PR.
+
 ## 0.2.1
 
 ### Fixed

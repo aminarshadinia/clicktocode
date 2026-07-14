@@ -99,9 +99,11 @@ export interface ClickAdapter {
  * - **stdin** (default): the prompt is written to the process's standard input.
  *   Works with any tool that reads a prompt from stdin, e.g. `claude --print`,
  *   `opencode run`, or your own script.
- * - **`{prompt}` placeholder**: if the string `{prompt}` appears in `command`
- *   or any `args` entry, it is replaced with the prompt and nothing is written
- *   to stdin. Use this for tools that take the prompt as an argument.
+ * - **`{prompt}` placeholder**: if the string `{prompt}` appears in any `args`
+ *   entry, it is replaced with the prompt and nothing is written to stdin. Use
+ *   this for tools that take the prompt as an argument. It is not allowed in
+ *   `command` itself — the executable must be fixed config, never derived from
+ *   browser input.
  *
  * ```ts
  * // Claude Code, prompt on stdin (default):
@@ -116,7 +118,8 @@ export interface CommandConfig {
   command: string;
   /**
    * Arguments passed to the command. If any entry contains "{prompt}", the
-   * prompt is substituted there instead of being written to stdin.
+   * prompt is substituted there instead of being written to stdin. (The
+   * placeholder is only honored here, never in `command`.)
    */
   args?: string[];
   /** Working directory. Defaults to the server's configured `directory`. */

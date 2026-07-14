@@ -443,7 +443,10 @@ export function createCliBackend(opts: BackendOptions): AgentBackend {
       return {
         done,
         abort: () => {
-          if (child && !child.killed) child.kill("SIGTERM");
+          // Kill the whole tree: on Windows this child is a cmd.exe wrapper
+          // (shell: true), and a bare kill would orphan the real opencode
+          // process underneath it.
+          killTree(child);
         },
       };
     },
@@ -470,14 +473,37 @@ const PROMPT_PLACEHOLDER = "{prompt}";
  * at Claude Code, your own script, a bug-filer, anything: the picker doesn't
  * care what runs, only that it receives the element context as a prompt.
  *
- * Delivery: if `{prompt}` appears in the command or any arg it is substituted
- * there; otherwise the prompt is written to the process's stdin. Because the
- * command is fixed server-side, the prompt is the only browser-controlled
- * input, and (unless the placeholder is used) it never touches argv — so there
- * is no shell-injection surface even for adversarial prompts.
+ * Delivery: if `{prompt}` appears in any arg it is substituted there; otherwise
+ * the prompt is written to the process's stdin. The placeholder is NOT allowed
+ * in `command` itself — the executable must be fixed config, never derived
+ * from browser-controlled input. Because the command is fixed server-side, the
+ * prompt is the only browser-controlled input, and (unless the placeholder is
+ * used) it never touches argv — so there is no shell-injection surface even
+ * for adversarial prompts.
  */
+/**
+ * Validate a CommandConfig. startServer calls this eagerly so a misconfigured
+ * bridge refuses to boot with a clear message, rather than 500ing the first
+ * grab with nothing in the server log. Throws on invalid config.
+ */
+export function validateCommandConfig(config: CommandConfig): void {
+  // The executable is trusted, fixed server config. Substituting the (browser-
+  // controlled) prompt into it would let the prompt decide WHAT runs — reject
+  // the config outright rather than silently doing something dangerous.
+  if (config.command.includes(PROMPT_PLACEHOLDER)) {
+    throw new Error(
+      `clicktocode: the ${PROMPT_PLACEHOLDER} placeholder is not allowed in 'command' ` +
+        `(the executable must be fixed config). Put it in 'args' instead.`
+    );
+  }
+}
+
 export function createCommandBackend(config: CommandConfig, opts: BackendOptions = {}): AgentBackend {
   const timeoutMs = config.timeoutMs ?? 300_000;
+
+  // Defense in depth for direct createCommandBackend callers; startServer
+  // already validated eagerly at boot.
+  validateCommandConfig(config);
 
   return {
     kind: "cli",
@@ -486,14 +512,13 @@ export function createCommandBackend(config: CommandConfig, opts: BackendOptions
       const sessionId = randomUUID();
       const cwd = config.cwd ?? opts.directory ?? process.cwd();
 
-      // Substitute {prompt} into command/args where present. If it appears
-      // anywhere, the prompt goes there and NOT to stdin; otherwise it's piped
-      // to stdin (the default, and the injection-safe path).
+      // Substitute {prompt} into args where present. If it appears, the prompt
+      // goes there and NOT to stdin; otherwise it's piped to stdin (the
+      // default, and the injection-safe path). Never into the command itself —
+      // rejected at construction above.
       const rawArgs = config.args ?? [];
-      const usesPlaceholder =
-        config.command.includes(PROMPT_PLACEHOLDER) ||
-        rawArgs.some((a) => a.includes(PROMPT_PLACEHOLDER));
-      const bin = config.command.split(PROMPT_PLACEHOLDER).join(prompt);
+      const usesPlaceholder = rawArgs.some((a) => a.includes(PROMPT_PLACEHOLDER));
+      const bin = config.command;
       const args = rawArgs.map((a) => a.split(PROMPT_PLACEHOLDER).join(prompt));
 
       // On Windows an npm-installed CLI is often a `.cmd` shim that raw spawn

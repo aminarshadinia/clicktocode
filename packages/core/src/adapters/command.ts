@@ -40,14 +40,17 @@ export interface CommandAdapterOptions extends OpenCodeAgentProviderOptions {
 export function commandAdapter(options: CommandAdapterOptions = {}): ClickAdapter & {
   provider: OpenCodeAgentProvider;
 } {
-  const provider = createOpenCodeAgentProvider(options);
+  // One label for both the adapter (picker toast) and the provider (devtools/
+  // window exposure) — a Claude/custom setup shouldn't masquerade as OpenCode.
+  const name = options.name ?? "agent";
+  const provider = createOpenCodeAgentProvider({ ...options, name });
   const defaultInstruction =
     options.defaultInstruction ?? "Improve this element. Infer the intent from the context.";
   // Track the current run so abort() can cancel it (and kill the process
   // server-side).
   let active: ReturnType<OpenCodeAgentProvider["sendPrompt"]> | null = null;
   return {
-    name: options.name ?? "agent",
+    name,
     wantsInstruction: true,
     provider,
     send: async (context: ClickContext, instruction?: string) => {

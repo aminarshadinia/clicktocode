@@ -308,7 +308,7 @@ The one rule that holds for **every** agent — and the thing that trips people 
 
 Check your agent's own `--help` for the exact names — they differ per tool and change between versions. If a grab starts but never finishes, a missing auto-confirm flag is the first thing to suspect.
 
-**Prompt delivery.** By default the prompt (your instruction + the captured element context) is written to the command's **stdin**. If you'd rather pass it as an argument, put `{prompt}` in the `command` or any `args` entry and it's substituted there instead:
+**Prompt delivery.** By default the prompt (your instruction + the captured element context) is written to the command's **stdin**. If you'd rather pass it as an argument, put `{prompt}` in any `args` entry and it's substituted there instead (it's not honored in `command` itself — the executable stays fixed config):
 
 ```ts
 startServer({ command: { command: "my-agent", args: ["--task", "{prompt}"] } });

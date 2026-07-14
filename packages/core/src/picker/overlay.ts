@@ -44,6 +44,10 @@ export function createOverlay(): OverlayHandles {
   root.appendChild(toastEl);
 
   let promptWrap: HTMLDivElement | null = null;
+  // Cancels the currently-open prompt (resolving its promise with null and
+  // removing its document-level listener). Set while a prompt is open, so a
+  // replacement prompt or destroy() can settle it instead of orphaning it.
+  let cancelActivePrompt: (() => void) | null = null;
 
   const positionLabel = (rect: DOMRect) => {
     label.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - 160))}px`;
@@ -76,7 +80,9 @@ export function createOverlay(): OverlayHandles {
 
     promptInput(rect, placeholder) {
       return new Promise((resolve) => {
-        promptWrap?.remove();
+        // Settle any previous prompt properly (resolve null + remove its
+        // document listener) instead of just detaching its DOM.
+        cancelActivePrompt?.();
         const wrap = document.createElement("div");
         promptWrap = wrap;
         const top = Math.min(rect.bottom + 8, window.innerHeight - 90);
@@ -122,8 +128,11 @@ export function createOverlay(): OverlayHandles {
           document.removeEventListener("pointerdown", onOutsidePointerDown, true);
           wrap.remove();
           if (promptWrap === wrap) promptWrap = null;
+          if (cancelActivePrompt === cancelSelf) cancelActivePrompt = null;
           resolve(value);
         };
+        const cancelSelf = () => finish(null);
+        cancelActivePrompt = cancelSelf;
         input.addEventListener("keydown", (e) => {
           e.stopPropagation();
           if (e.key === "Enter" && !e.shiftKey) {
@@ -176,6 +185,10 @@ export function createOverlay(): OverlayHandles {
     },
 
     destroy() {
+      // Settle an open prompt first so its promise resolves and its
+      // document-level listener is removed — not left dangling until the
+      // next unrelated click.
+      cancelActivePrompt?.();
       host.remove();
     },
   };

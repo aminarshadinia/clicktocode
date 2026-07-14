@@ -160,6 +160,14 @@ describe("security gates", () => {
 });
 
 describe("command backend (bring your own agent)", () => {
+  it("refuses to boot with {prompt} in the command itself (fail-fast)", () => {
+    // Validation is eager — the misconfiguration surfaces at startServer(),
+    // not as a 500 on the first grab.
+    expect(() =>
+      startServer({ port: nextPort++, verbose: false, command: { command: "{prompt}" } })
+    ).toThrow(/not allowed in 'command'/);
+  });
+
   it("runs the server-configured command and streams its output", async () => {
     const port = await boot({
       backend: undefined,

@@ -16,6 +16,7 @@ import {
   createCliBackend,
   createCommandBackend,
   createSdkBackend,
+  validateCommandConfig,
   type AgentBackend,
   type BackendOptions,
 } from "./backend.js";
@@ -134,6 +135,11 @@ async function readBody(req: IncomingMessage): Promise<string> {
  * ```
  */
 export function startServer(options: StartServerOptions = {}) {
+  // Fail fast on an invalid command config: the backend is created lazily on
+  // the first grab, so without this eager check a misconfigured bridge would
+  // boot silently and 500 the first request with nothing in the server log.
+  if (options.command) validateCommandConfig(options.command);
+
   const port = options.port ?? (Number(process.env.CLICKTOCODE_PORT) || DEFAULT_PORT);
   const host = options.host ?? DEFAULT_HOST;
   const backendOptions: BackendOptions = {

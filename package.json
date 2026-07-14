@@ -10,7 +10,8 @@
     "build": "pnpm -r --filter \"./packages/**\" build",
     "test": "pnpm -r --filter \"./packages/**\" test",
     "typecheck": "pnpm -r --filter \"./packages/**\" typecheck",
-    "check": "pnpm run typecheck && pnpm run test && pnpm run build"
+    "check": "pnpm run typecheck && pnpm run test && pnpm run build",
+    "publish:all": "pnpm run check && pnpm -r publish"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",
@@ -20,5 +21,6 @@
   },
   "engines": {
     "node": ">=18"
-  }
+  },
+  "packageManager": "pnpm@10.18.3"
 }

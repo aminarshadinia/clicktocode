@@ -7,6 +7,13 @@ import {
 } from "./types.js";
 
 export interface OpenCodeAgentProviderOptions {
+  /**
+   * Label for this provider, e.g. shown in devtools when the provider is
+   * exposed on `window`. Defaults to "opencode"; the command adapter passes
+   * its own agent label so a Claude/custom setup doesn't masquerade as
+   * OpenCode.
+   */
+  name?: string;
   /** Bridge server URL. Default: http://127.0.0.1:6567 */
   serverUrl?: string;
   /** Shared secret matching the server's `token` option, when set. */
@@ -34,7 +41,8 @@ export interface SendPromptHandle {
 }
 
 export interface OpenCodeAgentProvider {
-  name: "opencode";
+  /** The provider's label — "opencode" unless overridden via options.name. */
+  name: string;
   /** Check whether the local bridge server is reachable. */
   isAvailable: () => Promise<boolean>;
   /**
@@ -75,7 +83,7 @@ export function createOpenCodeAgentProvider(
   });
 
   return {
-    name: "opencode",
+    name: options.name ?? "opencode",
 
     async isAvailable() {
       try {

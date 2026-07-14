@@ -33,14 +33,23 @@ export default defineNuxtPlugin(() => {
         clickToCode({ adapter }), // hold Alt
         clickToCode({ adapter: clipboardAdapter(), hotkey: ["Meta", "c"], holdDuration: 500 }), // hold ⌘C
       ];
-      (window as unknown as { __opencodeProvider?: unknown }).__opencodeProvider = adapter.provider;
+      // Expose the provider for console poking. __clicktocodeProvider is the
+      // canonical name (adapter-neutral); __opencodeProvider stays as a
+      // back-compat alias.
+      const w = window as unknown as {
+        __clicktocodeProvider?: unknown;
+        __opencodeProvider?: unknown;
+      };
+      w.__clicktocodeProvider = adapter.provider;
+      w.__opencodeProvider = adapter.provider;
 
       // Tear down on HMR so an in-place plugin re-run doesn't stack duplicate
       // listeners and overlay hosts.
       // @ts-expect-error — import.meta.hot is a Vite/Nuxt dev-only global.
       import.meta.hot?.dispose(() => {
         pickers.forEach((p) => p.destroy());
-        delete (window as unknown as { __opencodeProvider?: unknown }).__opencodeProvider;
+        delete w.__clicktocodeProvider;
+        delete w.__opencodeProvider;
       });
     }
   );
