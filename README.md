@@ -268,10 +268,16 @@ Two halves:
    import { startServer } from "@clicktocode/core/server";
 
    // Claude Code — prompt piped to stdin (the default):
-   startServer({ command: { command: "claude", args: ["--print"] } });
+   startServer({ command: { command: "claude", args: ["--print", "--permission-mode", "acceptEdits"] } });
    ```
 
-   With the Vite plugin, pass it the same way: `clickToCode({ command: { command: "claude", args: ["--print"] } })`. In Next, pass it to `registerClickToCode({ command: … })`; in Nuxt, as a module option.
+   With the Vite plugin, pass it the same way: `clickToCode({ command: { command: "claude", args: ["--print", "--permission-mode", "acceptEdits"] } })`. In Next, pass it to `registerClickToCode({ command: … })`; in Nuxt, as a module option.
+
+   > **Using Claude Code specifically:** install and sign in first — `npm i -g @anthropic-ai/claude-code`, then run `claude` once to authenticate. The bridge just spawns whatever `claude` is on your PATH, so if it works in your terminal it works here.
+   >
+   > The two flags matter:
+   > - `--print` runs Claude headlessly (read the prompt, do the work, exit) instead of opening an interactive session that would hang waiting for a terminal.
+   > - `--permission-mode acceptEdits` lets it apply file edits without stopping to ask "allow this?" — there's no terminal to answer that prompt, so **without this flag it silently hangs on the first edit.** (`acceptEdits` still gates shell commands; use `bypassPermissions` only if you want it fully unattended.)
 
 2. **Browser** uses `commandAdapter` (or just keep `opencodeAdapter` — both POST to the same bridge; the adapter is only a label):
 
@@ -286,7 +292,7 @@ Two halves:
    export default defineNuxtConfig({
      modules: ["@clicktocode/nuxt"],
      clicktocode: {
-       command: { command: "claude", args: ["--print"] }, // what runs (server)
+       command: { command: "claude", args: ["--print", "--permission-mode", "acceptEdits"] }, // what runs (server)
        adapter: "command",                                 // use it (browser)
        adapterName: "claude",                              // label in the picker
      },
