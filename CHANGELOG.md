@@ -4,6 +4,16 @@ All notable changes to the clicktocode packages are documented here. The
 packages share a version, so an entry applies to every `@clicktocode/*` package
 unless noted.
 
+## 0.2.1
+
+### Fixed
+
+- **Broken install of the framework wrappers.** 0.2.0 was published with `npm`,
+  which does not rewrite the `workspace:^` protocol in the wrappers' dependency
+  on `@clicktocode/core`, so `npm install @clicktocode/vue` (and the other
+  wrappers) failed with `EUNSUPPORTEDPROTOCOL`. Republished with `pnpm`, which
+  resolves it to `^0.2.x`. 0.2.0 of the wrappers is deprecated; use 0.2.1.
+
 ## 0.2.0
 
 ### Added
