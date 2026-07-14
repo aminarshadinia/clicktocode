@@ -2,7 +2,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { timingSafeEqual } from "node:crypto";
 import { writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import {
   DEFAULT_HOST,
   DEFAULT_PORT,
@@ -46,6 +46,14 @@ export interface StartServerOptions extends BackendOptions {
    * ```
    */
   command?: CommandConfig;
+  /**
+   * Friendly name for the agent this bridge drives, reported at `/health` so
+   * the picker can label runs honestly (e.g. "claude", "opencode"). Defaults
+   * to the command's executable basename when `command` is set, otherwise
+   * "opencode". Set this when the executable name isn't user-friendly (e.g.
+   * `command: "node"` running your own script).
+   */
+  agentName?: string;
   /**
    * Browser origins allowed to call the API. Any localhost/127.0.0.1 origin
    * is allowed by default. Requests without an Origin header (curl, local
@@ -139,6 +147,13 @@ export function startServer(options: StartServerOptions = {}) {
   // the first grab, so without this eager check a misconfigured bridge would
   // boot silently and 500 the first request with nothing in the server log.
   if (options.command) validateCommandConfig(options.command);
+
+  // The agent this bridge drives, surfaced at /health so the picker labels runs
+  // honestly. Explicit agentName wins; else the command's executable basename
+  // (e.g. "claude"); else OpenCode.
+  const agentName =
+    options.agentName ??
+    (options.command ? basename(options.command.command) : "opencode");
 
   const port = options.port ?? (Number(process.env.CLICKTOCODE_PORT) || DEFAULT_PORT);
   const host = options.host ?? DEFAULT_HOST;
@@ -277,7 +292,7 @@ export function startServer(options: StartServerOptions = {}) {
     const url = new URL(req.url ?? "/", `http://${req.headers.host}`);
     if (req.method === "GET" && url.pathname === "/health") {
       res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ ok: true, name: "clicktocode" }));
+      res.end(JSON.stringify({ ok: true, name: "clicktocode", agent: agentName }));
       return;
     }
     if (url.pathname.startsWith("/api/") && options.token) {

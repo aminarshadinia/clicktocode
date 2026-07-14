@@ -46,6 +46,12 @@ export interface OpenCodeAgentProvider {
   /** Check whether the local bridge server is reachable. */
   isAvailable: () => Promise<boolean>;
   /**
+   * The agent the bridge is configured to drive ("claude", "opencode", …),
+   * read from /health. Resolves null if the bridge is unreachable or doesn't
+   * report one (older servers). Cached after the first call.
+   */
+  getAgentName: () => Promise<string | null>;
+  /**
    * Send a prompt (your instruction + the picker's element context)
    * to OpenCode and stream the response.
    */
@@ -82,6 +88,9 @@ export function createOpenCodeAgentProvider(
     ...(options.token ? { [TOKEN_HEADER]: options.token } : {}),
   });
 
+  // Cache the bridge's reported agent name so repeated grabs don't re-probe.
+  let agentNamePromise: Promise<string | null> | undefined;
+
   return {
     name: options.name ?? "opencode",
 
@@ -98,6 +107,23 @@ export function createOpenCodeAgentProvider(
       } catch {
         return false;
       }
+    },
+
+    getAgentName() {
+      agentNamePromise ??= (async () => {
+        try {
+          const res = await fetch(`${serverUrl}/health`, {
+            method: "GET",
+            signal: AbortSignal.timeout(4000),
+          });
+          if (!res.ok) return null;
+          const data = (await res.json()) as { agent?: unknown };
+          return typeof data.agent === "string" ? data.agent : null;
+        } catch {
+          return null;
+        }
+      })();
+      return agentNamePromise;
     },
 
     async undo() {

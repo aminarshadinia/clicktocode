@@ -4,7 +4,17 @@ All notable changes to the clicktocode packages are documented here. The
 packages share a version, so an entry applies to every `@clicktocode/*` package
 unless noted.
 
-## Unreleased
+## 0.2.2
+
+### Added
+
+- **The bridge reports which agent it drives.** `/health` now returns
+  `{ agent }` — `"opencode"` by default, the command's executable basename when
+  a `command` is set (e.g. `"claude"`), or an explicit `agentName` server
+  option. `commandAdapter` auto-labels itself from this (so the picker toast and
+  console show the real agent instead of a guess), and the provider exposes
+  `getAgentName()`. Fixes the picker showing "opencode" while a custom agent was
+  actually running.
 
 ### Fixed
 

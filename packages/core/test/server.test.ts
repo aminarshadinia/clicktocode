@@ -53,7 +53,8 @@ describe("bridge server", () => {
     const port = await boot();
     const res = await fetch(`http://127.0.0.1:${port}/health`);
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ ok: true, name: "clicktocode" });
+    // Default agent is "opencode" when no command is configured.
+    expect(await res.json()).toEqual({ ok: true, name: "clicktocode", agent: "opencode" });
   });
 
   it("streams start, message, tool, and done events for a prompt", async () => {
@@ -160,6 +161,29 @@ describe("security gates", () => {
 });
 
 describe("command backend (bring your own agent)", () => {
+  it("reports the agent name at /health (derived from the command, and overridable)", async () => {
+    // Derived from the command's basename.
+    const derived = await boot({
+      backend: undefined,
+      opencodeBin: undefined,
+      command: { command: "claude", args: ["--print"] },
+    });
+    expect(await (await fetch(`http://127.0.0.1:${derived}/health`)).json()).toMatchObject({
+      agent: "claude",
+    });
+
+    // Explicit agentName wins over the derived basename.
+    const explicit = await boot({
+      backend: undefined,
+      opencodeBin: undefined,
+      agentName: "my-bot",
+      command: { command: "node", args: ["agent.js"] },
+    });
+    expect(await (await fetch(`http://127.0.0.1:${explicit}/health`)).json()).toMatchObject({
+      agent: "my-bot",
+    });
+  });
+
   it("refuses to boot with {prompt} in the command itself (fail-fast)", () => {
     // Validation is eager — the misconfiguration surfaces at startServer(),
     // not as a 500 on the first grab.
