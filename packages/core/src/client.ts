@@ -122,7 +122,14 @@ export function createOpenCodeAgentProvider(
         } catch {
           return null;
         }
-      })();
+      })().then((name) => {
+        // Cache only successful lookups: a null just means the bridge wasn't
+        // reachable (yet) — the next call should probe again, so an adapter
+        // created before the dev server finished booting still gets its real
+        // label once the bridge is up.
+        if (name === null) agentNamePromise = undefined;
+        return name;
+      });
       return agentNamePromise;
     },
 

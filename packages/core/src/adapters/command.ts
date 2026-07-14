@@ -58,6 +58,15 @@ export function commandAdapter(options: CommandAdapterOptions = {}): ClickAdapte
       if (!(await provider.isAvailable())) {
         throw new Error("bridge server not reachable — is the dev server running?");
       }
+      // If the creation-time relabel missed (bridge was still booting), catch
+      // up now — the bridge is provably reachable at this point.
+      if (!options.name && adapter.name === "agent") {
+        const reported = await provider.getAgentName();
+        if (reported) {
+          adapter.name = reported;
+          provider.name = reported;
+        }
+      }
       const prompt = formatPrompt(context, instruction || defaultInstruction);
       const handle = provider.sendPrompt(prompt);
       active = handle;
