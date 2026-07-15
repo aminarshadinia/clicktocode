@@ -4,6 +4,21 @@ All notable changes to the clicktocode packages are documented here. The
 packages share a version, so an entry applies to every `@clicktocode/*` package
 unless noted.
 
+## 0.3.0
+
+### Added
+
+- **Multi-element selection.** While picking, ⇧click pins elements (numbered
+  badges that track scrolling; ⇧click again to unpin). A plain click or Enter
+  sends the whole set as one request — "make all these buttons consistent" —
+  and Esc clears. `ClickContext` gains an optional `group` with every selected
+  element's context in pick order; the top-level fields mirror the first
+  element, so adapters that predate `group` keep working. `formatPrompt`
+  renders every element, numbered.
+
+*(0.2.2 below was never published to npm; 0.3.0 is the first release carrying
+both.)*
+
 ## 0.2.2
 
 ### Added

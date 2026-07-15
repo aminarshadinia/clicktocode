@@ -4,6 +4,8 @@
 
 Hold <kbd>Alt</kbd>, click any element on the page, describe the change — clicktocode captures the element's DOM and its component owner stack (with source files, where the framework provides them) and sends it to the [OpenCode](https://opencode.ai) CLI, which edits your source. Your dev server hot-reloads. No copy-pasting file paths, no describing where the button is.
 
+**Multi-element selection:** while picking, <kbd>⇧</kbd>-click pins several elements (numbered badges; ⇧-click again to unpin). A plain click — or <kbd>Enter</kbd> — sends them all as one request: *"make all these buttons consistent"*. <kbd>Esc</kbd> clears.
+
 Works with **Vue, React, Svelte, Angular, Next.js (App + Pages Router), and Nuxt.**
 
 - [How it works](#how-it-works)
@@ -351,6 +353,8 @@ clickToCode({ adapter: myAdapter });
 ```
 
 Use `formatPrompt(context, instruction)` (exported from every package) to render the same prompt text the built-in adapters send.
+
+When the user multi-selects (⇧click), `context.group` holds every element's context in pick order, and the top-level fields mirror the first element — so an adapter that ignores `group` still works with a degraded single-element view. `formatPrompt` handles both shapes.
 
 ---
 

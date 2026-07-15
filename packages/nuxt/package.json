@@ -1,6 +1,6 @@
 {
   "name": "@clicktocode/nuxt",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "Click an element in your running Nuxt 3 app and hand it to a coding agent — element picker + OpenCode bridge.",
   "keywords": [
     "nuxt",

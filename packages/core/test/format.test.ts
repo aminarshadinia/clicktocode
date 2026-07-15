@@ -41,4 +41,33 @@ describe("formatPrompt", () => {
     expect(prompt.startsWith("<referenced_element>")).toBe(true);
     expect(prompt).not.toContain("owner stack");
   });
+
+  it("renders every element of a multi-selection, numbered in pick order", () => {
+    const second: ClickContext = {
+      html: '<button class="ghost">Cancel</button>',
+      selectorPath: "div#checkout > button.ghost",
+      componentStack: [
+        { componentName: "CancelButton", fileName: "src/components/CancelButton.vue" },
+      ],
+      element: null as unknown as HTMLElement,
+    };
+    const combined: ClickContext = { ...context, group: [context, second] };
+    const prompt = formatPrompt(combined, "Make these buttons consistent");
+
+    expect(prompt.startsWith("Make these buttons consistent\n")).toBe(true);
+    expect(prompt).toContain("2 elements are selected");
+    expect(prompt).toContain('<referenced_element index="1">');
+    expect(prompt).toContain('<referenced_element index="2">');
+    // Both elements' details are present…
+    expect(prompt).toContain("➤ CheckoutButton (src/components/CheckoutButton.vue)");
+    expect(prompt).toContain("➤ CancelButton (src/components/CancelButton.vue)");
+    expect(prompt).toContain('<button class="ghost">Cancel</button>');
+    // …and blocks close with the bare tag (no attributes).
+    expect(prompt).toContain("</referenced_element>");
+    expect(prompt).not.toContain('</referenced_element index');
+  });
+
+  it("a single-element group is rendered exactly like a plain single element", () => {
+    expect(formatPrompt({ ...context, group: [context] }, "hi")).toBe(formatPrompt(context, "hi"));
+  });
 });

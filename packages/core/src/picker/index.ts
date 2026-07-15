@@ -77,6 +77,10 @@ export function createPicker(options: CreatePickerOptions): Picker {
   let toastTimer: ReturnType<typeof setTimeout> | null = null;
   let hovered: HTMLElement | null = null;
   let busy = false;
+  // Multi-selection: elements pinned with ⇧click, in pick order. A plain click
+  // (or Enter) sends them all as one context; Esc clears them with the pick.
+  let pinned: HTMLElement[] = [];
+  let pinsFrame: number | null = null;
   // The in-flight adapter run, so a grab can be cancelled (Esc) instead of
   // hanging on a permanent spinner if the agent stalls.
   let cancelActive: (() => void) | null = null;
@@ -126,9 +130,50 @@ export function createPicker(options: CreatePickerOptions): Picker {
     }
   };
 
+  // Redraw the pin boxes from the elements' current positions. Elements that
+  // left the DOM (HMR, list re-render) drop out of the selection.
+  const renderPins = () => {
+    pinsFrame = null;
+    pinned = pinned.filter((el) => el.isConnected);
+    ui()?.setPins(
+      pinned.map((el) => ({ rect: el.getBoundingClientRect(), label: componentLabel(el) }))
+    );
+  };
+
+  // Keep pins glued to their elements while the page scrolls or resizes,
+  // coalesced to one redraw per frame.
+  const onViewportChange = () => {
+    if (!pinned.length) return;
+    if (pinsFrame === null) pinsFrame = requestAnimationFrame(renderPins);
+  };
+
+  const clearPins = () => {
+    pinned = [];
+    if (pinsFrame !== null) {
+      cancelAnimationFrame(pinsFrame);
+      pinsFrame = null;
+    }
+    overlay?.setPins([]);
+  };
+
+  const pinHint = () =>
+    ui()?.toast(
+      `${pinned.length} selected — ⇧click to add/remove · click or Enter to send · Esc to cancel`
+    );
+
+  const togglePin = (el: HTMLElement) => {
+    const index = pinned.indexOf(el);
+    if (index === -1) pinned.push(el);
+    else pinned.splice(index, 1);
+    renderPins();
+    if (pinned.length) pinHint();
+    else ui()?.toast("Pick an element — Esc to cancel");
+  };
+
   const deactivate = () => {
     picking = false;
     hovered = null;
+    clearPins();
     if (holdTimer) {
       clearTimeout(holdTimer);
       holdTimer = null;
@@ -160,6 +205,15 @@ export function createPicker(options: CreatePickerOptions): Picker {
         return;
       }
     }
+    // Enter sends the pinned multi-selection without adding another element.
+    if (e.key === "Enter" && picking && pinned.length) {
+      e.preventDefault();
+      e.stopPropagation();
+      const selection = [...pinned];
+      deactivate();
+      void grab(selection);
+      return;
+    }
     pressed.add(normalizeKey(e.key));
     if (e.repeat || picking || holdTimer || !comboHeld()) return;
     holdTimer = setTimeout(() => {
@@ -185,14 +239,20 @@ export function createPicker(options: CreatePickerOptions): Picker {
     if (frame === null) frame = requestAnimationFrame(renderHover);
   };
 
-  const grab = async (el: HTMLElement) => {
-    const context = captureContext(el);
+  const grab = async (els: HTMLElement[]) => {
+    // Multi-selection: the context mirrors the first element (so adapters that
+    // predate `group` still work) and carries every element in `group`.
+    const contexts = els.map((el) => captureContext(el));
+    const context: ClickContext =
+      contexts.length > 1 ? { ...contexts[0], group: contexts } : contexts[0];
     options.onSelect?.(context);
 
     let instruction: string | undefined;
     if (adapter.wantsInstruction) {
-      const rect = el.getBoundingClientRect();
-      const text = await ui()?.promptInput(rect, "Describe the change…");
+      const rect = els[els.length - 1].getBoundingClientRect();
+      const placeholder =
+        els.length > 1 ? `Describe the change (${els.length} elements)…` : "Describe the change…";
+      const text = await ui()?.promptInput(rect, placeholder);
       if (text === null || text === undefined) {
         ui()?.hideToast();
         return;
@@ -231,13 +291,35 @@ export function createPicker(options: CreatePickerOptions): Picker {
     }
   };
 
+  const onMouseDown = (e: MouseEvent) => {
+    // ⇧click during picking would otherwise extend the page's text selection
+    // (that happens on mousedown, before our click handler can cancel it).
+    if (picking && e.shiftKey && e.button === 0) e.preventDefault();
+  };
+
   const onClick = (e: MouseEvent) => {
     if (!picking || e.button !== 0) return;
     e.preventDefault();
     e.stopPropagation();
     const el = hitTest(e.clientX, e.clientY);
+
+    // ⇧click pins (or unpins) the element and stays in picking mode.
+    if (e.shiftKey) {
+      if (el) togglePin(el);
+      return;
+    }
+
+    // Plain click: send the pinned set (plus this element, if it's new) — or
+    // just the clicked element when nothing is pinned.
+    const selection = pinned.length
+      ? el && !pinned.includes(el)
+        ? [...pinned, el]
+        : [...pinned]
+      : el
+        ? [el]
+        : [];
     deactivate();
-    if (el) void grab(el);
+    if (selection.length) void grab(selection);
   };
 
   const onBlur = () => {
@@ -250,8 +332,13 @@ export function createPicker(options: CreatePickerOptions): Picker {
   window.addEventListener("keydown", onKeyDown, true);
   window.addEventListener("keyup", onKeyUp, true);
   window.addEventListener("mousemove", onMouseMove, true);
+  window.addEventListener("mousedown", onMouseDown, true);
   window.addEventListener("click", onClick, true);
   window.addEventListener("blur", onBlur);
+  // Pins are drawn at fixed viewport positions; track the elements as the page
+  // moves under them. Capture phase so nested scroll containers count too.
+  window.addEventListener("scroll", onViewportChange, { capture: true, passive: true });
+  window.addEventListener("resize", onViewportChange, { passive: true });
 
   return {
     activate,
@@ -267,8 +354,11 @@ export function createPicker(options: CreatePickerOptions): Picker {
       window.removeEventListener("keydown", onKeyDown, true);
       window.removeEventListener("keyup", onKeyUp, true);
       window.removeEventListener("mousemove", onMouseMove, true);
+      window.removeEventListener("mousedown", onMouseDown, true);
       window.removeEventListener("click", onClick, true);
       window.removeEventListener("blur", onBlur);
+      window.removeEventListener("scroll", onViewportChange, true);
+      window.removeEventListener("resize", onViewportChange);
       overlay?.destroy();
       overlay = null;
     },

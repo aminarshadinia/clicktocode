@@ -16,6 +16,12 @@ export interface OverlayHandles {
   /** True for nodes that belong to the picker UI (skip when hit-testing). */
   ownsElement: (el: Element) => boolean;
   highlight: (rect: DOMRect | null, label?: string) => void;
+  /**
+   * Draw persistent numbered boxes over the multi-selected elements (in pick
+   * order). Pass an empty array to clear. Rects are viewport coordinates; the
+   * picker re-calls this on scroll/resize to keep them glued to the elements.
+   */
+  setPins: (pins: { rect: DOMRect; label: string }[]) => void;
   /** Show the instruction input near a rect; resolves with text or null on cancel. */
   promptInput: (rect: DOMRect, placeholder: string) => Promise<string | null>;
   toast: (text: string, kind?: "info" | "busy" | "ok" | "error") => void;
@@ -49,6 +55,10 @@ export function createOverlay(): OverlayHandles {
   // replacement prompt or destroy() can settle it instead of orphaning it.
   let cancelActivePrompt: (() => void) | null = null;
 
+  // Container for the multi-selection pin boxes (rebuilt on every setPins).
+  const pinsWrap = document.createElement("div");
+  root.appendChild(pinsWrap);
+
   const positionLabel = (rect: DOMRect) => {
     label.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - 160))}px`;
     const above = rect.top - 24;
@@ -75,6 +85,19 @@ export function createOverlay(): OverlayHandles {
         positionLabel(rect);
       } else {
         label.style.display = "none";
+      }
+    },
+
+    setPins(pins) {
+      pinsWrap.textContent = "";
+      for (const [i, pin] of pins.entries()) {
+        const box = document.createElement("div");
+        box.style.cssText = `position:fixed;pointer-events:none;box-sizing:border-box;left:${pin.rect.left}px;top:${pin.rect.top}px;width:${pin.rect.width}px;height:${pin.rect.height}px;border:2px solid ${ACCENT};background:${ACCENT_BG};border-radius:3px;`;
+        const badge = document.createElement("div");
+        badge.textContent = `${i + 1} · ${pin.label}`;
+        badge.style.cssText = `position:absolute;top:-1px;left:-1px;padding:1px 6px;background:#047857;color:#ecfdf5;font:600 10px ${MONO};border-radius:3px 0 4px 0;white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis;`;
+        box.appendChild(badge);
+        pinsWrap.appendChild(box);
       }
     },
 

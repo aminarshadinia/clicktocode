@@ -59,6 +59,13 @@ export interface ClickContext {
   componentStack: ComponentStackEntry[];
   /** The selected element itself (not serializable — for adapter use only). */
   element: HTMLElement;
+  /**
+   * Present when the user multi-selected (⇧click) — the full per-element
+   * contexts in pick order. The top-level fields mirror the first element, so
+   * adapters that ignore `group` still work (with just the first element);
+   * `formatPrompt` renders every element when it's set.
+   */
+  group?: ClickContext[];
 }
 
 /**
