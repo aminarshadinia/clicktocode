@@ -1,6 +1,6 @@
 {
   "name": "@clicktocode/core",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "sideEffects": false,
   "description": "Framework-neutral core for clicktocode: element picker, adapters, and the local OpenCode bridge server.",
   "keywords": [

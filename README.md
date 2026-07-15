@@ -1,10 +1,14 @@
 # clicktocode
 
-**Click an element in your running app and hand it to a coding agent.**
+**Point at what you want changed instead of describing it.**
 
-Hold <kbd>Alt</kbd>, click any element on the page, describe the change — clicktocode captures the element's DOM and its component owner stack (with source files, where the framework provides them) and sends it to the [OpenCode](https://opencode.ai) CLI, which edits your source. Your dev server hot-reloads. No copy-pasting file paths, no describing where the button is.
+Hold <kbd>Alt</kbd> (<kbd>⌥ Option</kbd> on Mac) and your running app becomes pickable:
 
-**Multi-element selection:** while picking, <kbd>⇧</kbd>-click pins several elements (numbered badges; ⇧-click again to unpin). A plain click — or <kbd>Enter</kbd> — sends them all as one request: *"make all these buttons consistent"*. <kbd>Esc</kbd> clears.
+- **Click an element and type what you want** — a coding agent ([OpenCode](https://opencode.ai) by default; Claude Code or any command via [bring your own agent](#bring-your-own-agent-commandadapter)) edits the source, and your dev server hot-reloads.
+- **<kbd>⇧</kbd>-click to select several elements** (numbered badges; ⇧-click again to unpin), then click or press <kbd>Enter</kbd> to send them as one request: *"make all these buttons consistent"*. <kbd>Esc</kbd> clears.
+- **Or copy instead of sending:** the [clipboard adapter](#adapters) copies the same context, ready to paste into any AI chat or agent — no setup at all.
+
+Either way, your agent receives the element's exact DOM plus the owning components' **source file paths** — it doesn't burn tokens hunting through the codebase for "the blue button", and it never edits the wrong one.
 
 Works with **Vue, React, Svelte, Angular, Next.js (App + Pages Router), and Nuxt.**
 

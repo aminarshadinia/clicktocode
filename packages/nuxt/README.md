@@ -2,6 +2,8 @@
 
 Click an element in your running **Nuxt 3** app and hand it to a coding agent. [Full docs →](https://github.com/aminarshadinia/clicktocode)
 
+Hold <kbd>Alt</kbd> (<kbd>⌥ Option</kbd> on Mac), click an element — or <kbd>⇧</kbd>-click to select several — then type what you want. Your agent gets the element's exact DOM **and component source files**, so it doesn't burn tokens searching the codebase for it. No agent set up? The clipboard adapter copies that same context to paste into any AI chat.
+
 ```bash
 npm i -D @clicktocode/nuxt
 ```
@@ -15,7 +17,7 @@ export default defineNuxtConfig({
 
 The module is **dev-only**. It starts the bridge once when `nuxt dev` boots (via the `listen` hook — it never runs in `nuxt build`) and registers a client-only plugin that loads the picker after hydration.
 
-Hold <kbd>Alt</kbd>, click an element, describe the change — OpenCode edits your `.vue` source, and Nuxt hot-reloads. Hold <kbd>⌘C</kbd> to copy element context to the clipboard instead. Needs OpenCode: `npm i -g opencode-ai@latest && opencode auth login`.
+The default adapter is OpenCode — it edits your `.vue` source and Nuxt hot-reloads. Hold <kbd>⌘C</kbd> to copy element context to the clipboard instead. Needs the CLI: `npm i -g opencode-ai@latest && opencode auth login`.
 
 ### Options
 

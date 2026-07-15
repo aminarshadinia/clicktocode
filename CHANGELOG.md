@@ -4,6 +4,16 @@ All notable changes to the clicktocode packages are documented here. The
 packages share a version, so an entry applies to every `@clicktocode/*` package
 unless noted.
 
+## 0.3.1
+
+### Changed
+
+- Docs only: README intros rewritten around how you actually use it — hold
+  Alt/⌥ Option, click (or ⇧-click several), type — and why it helps: the
+  captured context (exact DOM + component source files) saves your agent from
+  token-burning codebase searches. The clipboard adapter's zero-setup
+  paste-anywhere path is called out up front in every package README.
+
 ## 0.3.0
 
 ### Added

@@ -2,6 +2,8 @@
 
 Click an element in your running **Next.js** app (App Router **and** Pages Router) and hand it to a coding agent. [Full docs →](https://github.com/aminarshadinia/clicktocode)
 
+Hold <kbd>Alt</kbd> (<kbd>⌥ Option</kbd> on Mac), click an element — or <kbd>⇧</kbd>-click to select several — then type what you want. Your agent gets the element's exact DOM **and component source files**, so it doesn't burn tokens searching the codebase for it. No agent set up? The clipboard adapter copies that same context to paste into any AI chat.
+
 ```bash
 npm i -D @clicktocode/next
 ```
@@ -54,7 +56,7 @@ export default function App({ Component, pageProps }) {
 
 `<ClickToCode />` props: `serverUrl`, `opencode` (adapter options), `clipboard` (also run a ⌘C clipboard picker, default `true`).
 
-Hold <kbd>Alt</kbd>, click an element, describe the change — OpenCode edits your code. Needs OpenCode: `npm i -g opencode-ai@latest && opencode auth login`.
+The default adapter is OpenCode. Needs the CLI: `npm i -g opencode-ai@latest && opencode auth login`.
 
 ### App Router + Server Components
 

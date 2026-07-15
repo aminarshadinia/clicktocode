@@ -2,6 +2,8 @@
 
 Click an element in your running **React** (Vite) app and hand it to a coding agent. [Full docs →](https://github.com/aminarshadinia/clicktocode)
 
+Hold <kbd>Alt</kbd> (<kbd>⌥ Option</kbd> on Mac), click an element — or <kbd>⇧</kbd>-click to select several — then type what you want. Your agent gets the element's exact DOM **and component source files**, so it doesn't burn tokens searching the codebase for it. No agent set up? The clipboard adapter copies that same context to paste into any AI chat.
+
 Using **Next.js**? Install [`@clicktocode/next`](https://www.npmjs.com/package/@clicktocode/next) instead.
 
 ```bash
@@ -21,7 +23,7 @@ if (import.meta.env.DEV) {
 }
 ```
 
-Hold <kbd>Alt</kbd>, click an element, describe the change — OpenCode edits your code. Second picker for clipboard: `clickToCode({ adapter: clipboardAdapter(), hotkey: ["Meta", "c"] })`.
+The default adapter is OpenCode. Second picker for clipboard: `clickToCode({ adapter: clipboardAdapter(), hotkey: ["Meta", "c"] })`.
 
 **Component stack** is read from the React fiber (`__reactFiber$`) — no devtools extension needed. Works through `memo` and `forwardRef`; component names resolve in dev, and in production too unless your minifier mangles function names (Vite's default esbuild does — set a `displayName` to guarantee it). Source files resolve in dev builds up to React 18. Needs OpenCode: `npm i -g opencode-ai@latest && opencode auth login` (or use `clipboardAdapter()`).
 

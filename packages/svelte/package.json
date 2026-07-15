@@ -1,8 +1,8 @@
 {
   "name": "@clicktocode/svelte",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "sideEffects": false,
-  "description": "Click an element in your running Svelte app and hand it to a coding agent — element picker + OpenCode bridge.",
+  "description": "Click an element in your running Svelte app and hand it to a coding agent \u2014 element picker + OpenCode bridge.",
   "keywords": [
     "devtools",
     "element-picker",
