@@ -4,9 +4,9 @@
 
 Hold <kbd>Alt</kbd> (<kbd>⌥ Option</kbd> on Mac) and your running app becomes pickable:
 
-- **Click an element and type what you want** — a coding agent ([OpenCode](https://opencode.ai) by default; Claude Code or any command via [bring your own agent](#bring-your-own-agent-commandadapter)) edits the source, and your dev server hot-reloads.
+- **Click an element and type what you want** — a coding agent ([OpenCode](https://opencode.ai), Claude Code, or any command via [bring your own agent](#bring-your-own-agent-commandadapter)) edits the source, and your dev server hot-reloads.
 - **<kbd>⇧</kbd>-click to select several elements** (numbered badges; ⇧-click again to unpin), then click or press <kbd>Enter</kbd> to send them as one request: *"make all these buttons consistent"*. <kbd>Esc</kbd> clears.
-- **Or copy instead of sending:** the [clipboard adapter](#adapters) copies the same context, ready to paste into any AI chat or agent — no setup at all.
+- **Or just copy:** the [clipboard adapter](#adapters) — the zero-config default when you pass no adapter — puts the same context on your clipboard, one element or a whole ⇧-click selection, ready to paste into any AI chat or agent.
 
 Either way, your agent receives the element's exact DOM plus the owning components' **source file paths** — it doesn't burn tokens hunting through the codebase for "the blue button", and it never edits the wrong one.
 
@@ -215,11 +215,15 @@ export default defineNuxtConfig({
 
 ---
 
-Once wired up, hold <kbd>Alt</kbd> (~350 ms), hover to highlight, click an element, type your change, press Enter. To copy context to the clipboard instead, run a second picker on another key:
+Once wired up, hold <kbd>Alt</kbd> (~350 ms), hover to highlight, click an element, type your change, press Enter. <kbd>⇧</kbd>-click first to select several and send them together.
+
+**Copying works alongside the agent.** Run a second, clipboard-only picker on its own key (Next and Nuxt already wire this up by default, platform-aware: ⌘C on Mac, Ctrl+C on Windows/Linux):
 
 ```ts
-clickToCode({ adapter: clipboardAdapter(), hotkey: ["Meta", "c"] }); // hold ⌘C
+clickToCode({ adapter: clipboardAdapter(), hotkey: ["Meta", "c"] }); // hold ⌘C (use ["Control", "c"] on Windows/Linux)
 ```
+
+Hold <kbd>⌘C</kbd> — <kbd>Ctrl+C</kbd> on Windows/Linux — to start picking; a quick tap still copies text as normal. Click an element and its context is on your clipboard; <kbd>⇧</kbd>-click several first and they're all copied as one prompt, ready to paste into any AI chat.
 
 ---
 
@@ -257,9 +261,9 @@ import { opencodeAdapter, commandAdapter, clipboardAdapter, cursorAdapter } from
 
 | Adapter | What it does |
 |---|---|
-| `opencodeAdapter(opts)` | Streams the element + your instruction to the OpenCode CLI through the bridge. The default. |
+| `opencodeAdapter(opts)` | Streams the element + your instruction to the OpenCode CLI through the bridge. What the quick starts wire up. |
 | `commandAdapter(opts)` | Bring your own agent — runs whatever command the bridge is configured with (Claude Code, your own script, …) and streams its output back. See below. |
-| `clipboardAdapter()` | Copies the element context to your clipboard — paste into any agent. No bridge/OpenCode needed. |
+| `clipboardAdapter()` | **The zero-config default** — `clickToCode()` with no adapter uses it. Copies the element context (one element, or a ⇧-click selection) to your clipboard to paste into any agent. No bridge/OpenCode needed. |
 | `cursorAdapter()` | Opens Cursor with the context + instruction via its deeplink. |
 
 `opencodeAdapter` options: `serverUrl` (default `http://127.0.0.1:6567`), `getOptions: () => ({ agent, model })`, `onEvent`, `onStatusChange`, and `token` (see Security).

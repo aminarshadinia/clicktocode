@@ -29,9 +29,12 @@ export default defineNuxtPlugin(() => {
         config?.adapter === "command"
           ? commandAdapter({ serverUrl: config?.serverUrl, name: config?.adapterName })
           : opencodeAdapter({ serverUrl: config?.serverUrl, getOptions: () => ({ agent: "build" }) });
+      // ⌘C on Mac; Ctrl+C elsewhere (Meta is the Windows key on Windows, and
+      // Win+C is taken by the OS).
+      const copyKey = /Mac|iP(hone|ad|od)/.test(navigator.platform) ? "Meta" : "Control";
       const pickers = [
         clickToCode({ adapter }), // hold Alt
-        clickToCode({ adapter: clipboardAdapter(), hotkey: ["Meta", "c"], holdDuration: 500 }), // hold ⌘C
+        clickToCode({ adapter: clipboardAdapter(), hotkey: [copyKey, "c"], holdDuration: 500 }),
       ];
       // Expose the provider for console poking. __clicktocodeProvider is the
       // canonical name (adapter-neutral); __opencodeProvider stays as a

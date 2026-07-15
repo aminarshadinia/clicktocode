@@ -34,16 +34,16 @@ Use the project's own package manager (`pnpm add -D` / `yarn add -D` if a lockfi
 
 Ask — don't guess. The options:
 
-1. **OpenCode** (the default adapter). Requires `npm i -g opencode-ai@latest && opencode auth login` once. Richest integration: streaming events, sessions, undo.
+1. **OpenCode** (what the quick starts wire up). Requires `npm i -g opencode-ai@latest && opencode auth login` once. Richest integration: streaming events, sessions, undo.
 2. **Claude Code**. Requires `claude` installed and authenticated. Server command config: `{ command: "claude", args: ["--print", "--permission-mode", "acceptEdits"] }`. Both flags are load-bearing: `--print` = headless, `acceptEdits` = don't hang waiting for an approval prompt no one can answer.
 3. **Another CLI agent** (Aider, Gemini CLI, a custom script…). Same shape: `{ command: "<executable>", args: [<flags>] }`. The command MUST run headless and auto-confirm its own edits (e.g. Aider: `--message {prompt}` style + `--yes`); check the tool's `--help`. Prompt arrives on **stdin** by default, or replace any args entry with `{prompt}`.
-4. **Clipboard only** — zero setup, no bridge/agent needed. The grab is copied for pasting into any AI chat.
+4. **Clipboard only** — zero setup, no bridge/agent needed; it's also what `clickToCode()` defaults to when no adapter is passed. The grab (one element or a ⇧-click selection) is copied for pasting into any AI chat.
 
 The command config lives **server-side only** (vite/nuxt/next config — never browser code): the browser sends only the prompt; what executes is fixed server config. Don't move it.
 
 ## 4. Wire it
 
-Adapt file names to the project (`main.ts`/`main.tsx`/`main.js`, `vite.config.*`). For options 2–3, `commandAdapter({ name: "<agent>" })` in the browser is only a label — the picker auto-detects the real agent from the bridge's `/health`.
+Adapt file names to the project (`main.ts`/`main.tsx`/`main.js`, `vite.config.*`). For options 2–3, the browser-side `commandAdapter({ name: "claude" })` name is only a display label — omit it and the adapter labels itself from the bridge's `/health` automatically.
 
 **Vue / React / Svelte (Vite)** — two edits:
 
@@ -109,7 +109,7 @@ if (isDevMode()) clickToCode({ adapter: opencodeAdapter() });
 "dev": "npx clicktocode & ng serve"
 ```
 
-**Clipboard-only setups (option 4):** skip the vite plugin / instrumentation / bridge entirely — just the entry-file import with `clipboardAdapter()`. A nice default even alongside another adapter: a second picker on `clickToCode({ adapter: clipboardAdapter(), hotkey: ["Meta", "c"] })`.
+**Clipboard-only setups (option 4):** skip the vite plugin / instrumentation / bridge entirely — just the entry-file import with `clipboardAdapter()` (or no adapter at all; clipboard is the default). Worth adding even alongside an agent: a second picker on `clickToCode({ adapter: clipboardAdapter(), hotkey: ["Meta", "c"] })`. Next's `<ClickToCode />` and the Nuxt module already wire this copy picker by default (⌘C on Mac, Ctrl+C on Windows/Linux).
 
 ## 5. Verify
 

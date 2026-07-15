@@ -6,6 +6,13 @@ unless noted.
 
 ## 0.3.1
 
+### Fixed
+
+- **Windows/Linux: the built-in copy picker is now Ctrl+C.** Next's
+  `<ClickToCode />` and the Nuxt module hard-coded `["Meta", "c"]`, which is
+  ⌘C on Mac but the **Windows key** elsewhere — and Win+C is taken by the OS.
+  The default is now platform-aware: ⌘C on Mac, Ctrl+C on Windows/Linux.
+
 ### Added
 
 - **`SKILL.md` — agent-assisted integration.** Hand it to any coding agent
@@ -20,7 +27,10 @@ unless noted.
   Alt/⌥ Option, click (or ⇧-click several), type — and why it helps: the
   captured context (exact DOM + component source files) saves your agent from
   token-burning codebase searches. The clipboard adapter's zero-setup
-  paste-anywhere path is called out up front in every package README.
+  paste-anywhere path is called out up front in every package README, the
+  ⌘C copy picker (built into Next/Nuxt, one line elsewhere) is documented,
+  and the adapters table now correctly names **clipboard** — not OpenCode —
+  as the zero-config default (`clickToCode()` with no adapter copies).
 
 ## 0.3.0
 

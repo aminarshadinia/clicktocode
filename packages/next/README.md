@@ -2,7 +2,7 @@
 
 Click an element in your running **Next.js** app (App Router **and** Pages Router) and hand it to a coding agent. [Full docs →](https://github.com/aminarshadinia/clicktocode)
 
-Hold <kbd>Alt</kbd> (<kbd>⌥ Option</kbd> on Mac), click an element — or <kbd>⇧</kbd>-click to select several — then type what you want. Your agent gets the element's exact DOM **and component source files**, so it doesn't burn tokens searching the codebase for it. No agent set up? The clipboard adapter copies that same context to paste into any AI chat.
+Hold <kbd>Alt</kbd> (<kbd>⌥ Option</kbd> on Mac), click an element — or <kbd>⇧</kbd>-click to select several — then type what you want. Your agent gets the element's exact DOM **and component source files**, so it doesn't burn tokens searching the codebase for it. No agent set up? Hold <kbd>⌘C</kbd> on Mac / <kbd>Ctrl+C</kbd> on Windows-Linux (about half a second) instead — a clipboard picker is wired up by default — and the same context is copied (one element, or several) to paste into any AI chat.
 
 **Easiest setup — let your AI do it:** give your coding agent the repo's [SKILL.md](https://github.com/aminarshadinia/clicktocode/blob/master/SKILL.md) and say *“integrate clicktocode into this project”* — it detects your framework, installs the right package, and wires up the agent of your choice.
 
@@ -56,9 +56,9 @@ export default function App({ Component, pageProps }) {
 }
 ```
 
-`<ClickToCode />` props: `serverUrl`, `opencode` (adapter options), `clipboard` (also run a ⌘C clipboard picker, default `true`).
+`<ClickToCode />` props: `serverUrl`, `opencode` (adapter options), `clipboard` (also run a copy picker on ⌘C / Ctrl+C, default `true`).
 
-The default adapter is OpenCode. Needs the CLI: `npm i -g opencode-ai@latest && opencode auth login`.
+`<ClickToCode />` defaults to OpenCode on <kbd>Alt</kbd>, plus the clipboard picker on <kbd>⌘C</kbd> (Mac) / <kbd>Ctrl+C</kbd> (Windows/Linux). Needs the CLI: `npm i -g opencode-ai@latest && opencode auth login`.
 
 ### App Router + Server Components
 

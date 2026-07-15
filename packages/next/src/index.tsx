@@ -25,7 +25,7 @@ export interface ClickToCodeProps {
    * canonical place for the bridge URL.
    */
   opencode?: Omit<OpenCodeAdapterOptions, "serverUrl">;
-  /** Also run a clipboard picker on ⌘C. Default true. */
+  /** Also run a clipboard picker on ⌘C (Ctrl+C on Windows/Linux). Default true. */
   clipboard?: boolean;
 }
 
@@ -55,8 +55,11 @@ export function ClickToCode(props: ClickToCodeProps): null {
       });
       const pickers = [clickToCode({ adapter })];
       if (props.clipboard !== false) {
+        // ⌘C on Mac; Ctrl+C elsewhere (Meta is the Windows key on Windows, and
+        // Win+C is taken by the OS).
+        const copyKey = /Mac|iP(hone|ad|od)/.test(navigator.platform) ? "Meta" : "Control";
         pickers.push(
-          clickToCode({ adapter: clipboardAdapter(), hotkey: ["Meta", "c"], holdDuration: 500 })
+          clickToCode({ adapter: clipboardAdapter(), hotkey: [copyKey, "c"], holdDuration: 500 })
         );
       }
       (window as unknown as { __opencodeProvider?: unknown }).__opencodeProvider = adapter.provider;
