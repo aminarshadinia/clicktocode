@@ -6,6 +6,14 @@ unless noted.
 
 ## 0.3.1
 
+### Added
+
+- **`SKILL.md` — agent-assisted integration.** Hand it to any coding agent
+  ("integrate clicktocode into this project") and it detects the framework,
+  installs the right package, and wires the bridge + the agent of your choice.
+  Claude Code users can drop it in `.claude/skills/clicktocode/` as a skill.
+  Every README points to it.
+
 ### Changed
 
 - Docs only: README intros rewritten around how you actually use it — hold

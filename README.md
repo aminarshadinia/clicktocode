@@ -12,8 +12,10 @@ Either way, your agent receives the element's exact DOM plus the owning componen
 
 Works with **Vue, React, Svelte, Angular, Next.js (App + Pages Router), and Nuxt.**
 
+> **Easiest setup — let your AI do it.** Give your coding agent [SKILL.md](./SKILL.md) and say *“integrate clicktocode into this project”* — it detects your framework, installs the right package, and wires up the agent of your choice. (Claude Code: drop it in `.claude/skills/clicktocode/SKILL.md` and it becomes a proper skill.)
+
 - [How it works](#how-it-works)
-- [Quick start](#quick-start) — pick your framework
+- [Quick start](#quick-start) — pick your framework, or hand [SKILL.md](./SKILL.md) to your agent
 - [What you get per framework](#what-you-get-per-framework) — the capability matrix
 - [Adapters](#adapters) — OpenCode, your own agent (Claude Code, …), clipboard, Cursor, or fully custom
 - [Security](#security)

@@ -4,6 +4,8 @@ Framework-neutral core for [clicktocode](https://github.com/aminarshadinia/click
 
 Hold <kbd>Alt</kbd> (<kbd>⌥ Option</kbd> on Mac), click an element — or <kbd>⇧</kbd>-click to select several — then type what you want. Your agent gets the element's exact DOM **and component source files**, so it doesn't burn tokens searching the codebase for it. No agent set up? The clipboard adapter copies that same context to paste into any AI chat.
 
+**Easiest setup — let your AI do it:** give your coding agent the repo's [SKILL.md](https://github.com/aminarshadinia/clicktocode/blob/master/SKILL.md) and say *“integrate clicktocode into this project”* — it detects your framework, installs the right package, and wires up the agent of your choice.
+
 **You normally don't install this directly.** Install the package for your framework, which pulls core in automatically:
 
 - [`@clicktocode/vue`](https://www.npmjs.com/package/@clicktocode/vue) — Vue 3
