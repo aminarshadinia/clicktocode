@@ -109,7 +109,7 @@ if (isDevMode()) clickToCode({ adapter: opencodeAdapter() });
 "dev": "npx clicktocode & ng serve"
 ```
 
-**Clipboard-only setups (option 4):** skip the vite plugin / instrumentation / bridge entirely — just the entry-file import with `clipboardAdapter()` (or no adapter at all; clipboard is the default). Worth adding even alongside an agent: a second picker on `clickToCode({ adapter: clipboardAdapter(), hotkey: ["Meta", "c"] })`. Next's `<ClickToCode />` and the Nuxt module already wire this copy picker by default (⌘C on Mac, Ctrl+C on Windows/Linux).
+**Clipboard-only setups (option 4):** skip the vite plugin / instrumentation / bridge entirely — just the entry-file import with `clipboardAdapter()` (or no adapter at all; clipboard is the default). Worth adding even alongside an agent: a second picker on `clickToCode({ adapter: clipboardAdapter(), hotkey: copyHotkey() })` (⌘C on Mac, Ctrl+C elsewhere — `copyHotkey` is exported next to `clipboardAdapter`). Next's `<ClickToCode />` and the Nuxt module already wire this copy picker by default (⌘C on Mac, Ctrl+C on Windows/Linux).
 
 ## 5. Verify
 

@@ -8,6 +8,7 @@
 export { createPicker } from "./picker/index.js";
 export type { CreatePickerOptions, Picker } from "./picker/index.js";
 export { formatPrompt } from "./format.js";
+export { copyHotkey } from "./hotkey.js";
 export { clipboardAdapter } from "./adapters/clipboard.js";
 export { cursorAdapter } from "./adapters/cursor.js";
 export { opencodeAdapter, type OpenCodeAdapterOptions } from "./adapters/opencode.js";

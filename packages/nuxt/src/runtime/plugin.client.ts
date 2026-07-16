@@ -21,7 +21,7 @@ export default defineNuxtPlugin(() => {
     | undefined;
 
   import("@clicktocode/vue").then(
-    ({ clickToCode, opencodeAdapter, commandAdapter, clipboardAdapter }) => {
+    ({ clickToCode, opencodeAdapter, commandAdapter, clipboardAdapter, copyHotkey }) => {
       // Pick the primary (Alt-hold) adapter. "command" streams to whatever the
       // bridge's `command` runs (bring your own agent); "opencode" (default)
       // uses the OpenCode CLI. Both hit the same bridge.
@@ -29,12 +29,10 @@ export default defineNuxtPlugin(() => {
         config?.adapter === "command"
           ? commandAdapter({ serverUrl: config?.serverUrl, name: config?.adapterName })
           : opencodeAdapter({ serverUrl: config?.serverUrl, getOptions: () => ({ agent: "build" }) });
-      // ⌘C on Mac; Ctrl+C elsewhere (Meta is the Windows key on Windows, and
-      // Win+C is taken by the OS).
-      const copyKey = /Mac|iP(hone|ad|od)/.test(navigator.platform) ? "Meta" : "Control";
       const pickers = [
         clickToCode({ adapter }), // hold Alt
-        clickToCode({ adapter: clipboardAdapter(), hotkey: [copyKey, "c"], holdDuration: 500 }),
+        // ⌘C on Mac; Ctrl+C elsewhere (Meta is the Windows key outside macOS).
+        clickToCode({ adapter: clipboardAdapter(), hotkey: copyHotkey(), holdDuration: 500 }),
       ];
       // Expose the provider for console poking. __clicktocodeProvider is the
       // canonical name (adapter-neutral); __opencodeProvider stays as a

@@ -25,6 +25,7 @@ export { captureContext } from "./context.js";
 // Re-export the framework-neutral surface so consumers need only this package.
 export {
   clipboardAdapter,
+  copyHotkey,
   cursorAdapter,
   opencodeAdapter,
   commandAdapter,

@@ -47,7 +47,7 @@ export function ClickToCode(props: ClickToCodeProps): null {
     let dispose: (() => void) | undefined;
     let cancelled = false;
 
-    import("@clicktocode/react").then(({ clickToCode, opencodeAdapter, clipboardAdapter }) => {
+    import("@clicktocode/react").then(({ clickToCode, opencodeAdapter, clipboardAdapter, copyHotkey }) => {
       if (cancelled) return;
       const adapter = opencodeAdapter({
         serverUrl: props.serverUrl,
@@ -55,11 +55,9 @@ export function ClickToCode(props: ClickToCodeProps): null {
       });
       const pickers = [clickToCode({ adapter })];
       if (props.clipboard !== false) {
-        // ⌘C on Mac; Ctrl+C elsewhere (Meta is the Windows key on Windows, and
-        // Win+C is taken by the OS).
-        const copyKey = /Mac|iP(hone|ad|od)/.test(navigator.platform) ? "Meta" : "Control";
+        // ⌘C on Mac; Ctrl+C elsewhere (Meta is the Windows key outside macOS).
         pickers.push(
-          clickToCode({ adapter: clipboardAdapter(), hotkey: [copyKey, "c"], holdDuration: 500 })
+          clickToCode({ adapter: clipboardAdapter(), hotkey: copyHotkey(), holdDuration: 500 })
         );
       }
       (window as unknown as { __opencodeProvider?: unknown }).__opencodeProvider = adapter.provider;
@@ -84,6 +82,7 @@ export {
   opencodeAdapter,
   commandAdapter,
   clipboardAdapter,
+  copyHotkey,
   cursorAdapter,
   createOpenCodeAgentProvider,
   captureContext,

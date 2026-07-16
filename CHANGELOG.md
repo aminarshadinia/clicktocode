@@ -11,7 +11,11 @@ unless noted.
 - **Windows/Linux: the built-in copy picker is now Ctrl+C.** Next's
   `<ClickToCode />` and the Nuxt module hard-coded `["Meta", "c"]`, which is
   ⌘C on Mac but the **Windows key** elsewhere — and Win+C is taken by the OS.
-  The default is now platform-aware: ⌘C on Mac, Ctrl+C on Windows/Linux.
+  The default is now platform-aware: ⌘C on Mac, Ctrl+C on Windows/Linux. The
+  logic is exported as `copyHotkey()` from core and the framework wrappers
+  (vue/react/svelte/angular/next), so self-wired
+  clipboard pickers can use `hotkey: copyHotkey()` instead of hardcoding
+  `["Meta", "c"]` — the docs now do.
 
 ### Added
 

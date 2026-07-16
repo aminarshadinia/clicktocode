@@ -220,7 +220,7 @@ Once wired up, hold <kbd>Alt</kbd> (~350 ms), hover to highlight, click an eleme
 **Copying works alongside the agent.** Run a second, clipboard-only picker on its own key (Next and Nuxt already wire this up by default, platform-aware: ⌘C on Mac, Ctrl+C on Windows/Linux):
 
 ```ts
-clickToCode({ adapter: clipboardAdapter(), hotkey: ["Meta", "c"] }); // hold ⌘C (use ["Control", "c"] on Windows/Linux)
+clickToCode({ adapter: clipboardAdapter(), hotkey: copyHotkey() }); // ⌘C on Mac, Ctrl+C on Windows/Linux
 ```
 
 Hold <kbd>⌘C</kbd> — <kbd>Ctrl+C</kbd> on Windows/Linux — to start picking; a quick tap still copies text as normal. Click an element and its context is on your clipboard; <kbd>⇧</kbd>-click several first and they're all copied as one prompt, ready to paste into any AI chat.
@@ -256,7 +256,7 @@ In every framework, an **empty component stack almost always means you're runnin
 An adapter decides where a grabbed element goes. Import them from your framework package:
 
 ```ts
-import { opencodeAdapter, commandAdapter, clipboardAdapter, cursorAdapter } from "@clicktocode/vue";
+import { opencodeAdapter, commandAdapter, clipboardAdapter, cursorAdapter, copyHotkey } from "@clicktocode/vue";
 ```
 
 | Adapter | What it does |
