@@ -4,7 +4,7 @@ All notable changes to the clicktocode packages are documented here. The
 packages share a version, so an entry applies to every `@clicktocode/*` package
 unless noted.
 
-## 0.3.1
+## 0.3.2
 
 ### Fixed
 
@@ -16,6 +16,13 @@ unless noted.
   (vue/react/svelte/angular/next), so self-wired
   clipboard pickers can use `hotkey: copyHotkey()` instead of hardcoding
   `["Meta", "c"]` — the docs now do.
+- Doc corrections from review: the adapters table now correctly names
+  **clipboard** — not OpenCode — as the zero-config default (`clickToCode()`
+  with no adapter copies); Next/Nuxt READMEs state their built-in copy picker
+  instead of implying a bare default; the Angular README no longer claims
+  source files (Angular exposes component names + inputs, no files).
+
+## 0.3.1
 
 ### Added
 
@@ -31,10 +38,7 @@ unless noted.
   Alt/⌥ Option, click (or ⇧-click several), type — and why it helps: the
   captured context (exact DOM + component source files) saves your agent from
   token-burning codebase searches. The clipboard adapter's zero-setup
-  paste-anywhere path is called out up front in every package README, the
-  ⌘C copy picker (built into Next/Nuxt, one line elsewhere) is documented,
-  and the adapters table now correctly names **clipboard** — not OpenCode —
-  as the zero-config default (`clickToCode()` with no adapter copies).
+  paste-anywhere path is called out up front in every package README.
 
 ## 0.3.0
 
@@ -48,8 +52,6 @@ unless noted.
   element, so adapters that predate `group` keep working. `formatPrompt`
   renders every element, numbered.
 
-*(0.2.2 below was never published to npm; 0.3.0 is the first release carrying
-both.)*
 
 ## 0.2.2
 
