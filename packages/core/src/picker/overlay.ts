@@ -24,9 +24,49 @@ export interface OverlayHandles {
   setPins: (pins: { rect: DOMRect; label: string }[]) => void;
   /** Show the instruction input near a rect; resolves with text or null on cancel. */
   promptInput: (rect: DOMRect, placeholder: string) => Promise<string | null>;
-  toast: (text: string, kind?: "info" | "busy" | "ok" | "error") => void;
+  /**
+   * Show a status toast. When `onCancel` is given, the toast gets an ✕ button
+   * that calls it — so with several runs going at once, each toast can cancel
+   * just its own (whereas Esc cancels every in-flight run).
+   */
+  toast: (
+    text: string,
+    kind?: "info" | "busy" | "ok" | "error",
+    onCancel?: () => void
+  ) => void;
   hideToast: () => void;
   destroy: () => void;
+}
+
+// Toasts are `position: fixed`, and every picker instance owns its own. Two
+// pickers running at once (e.g. the Alt agent picker and the ⌘C clipboard
+// picker) would otherwise pin both toasts to the same top-center spot, so a
+// clipboard "Copied" would paint over an agent run's live progress. This
+// module-level list lays every visible toast out in a vertical stack, in the
+// order they appeared, so they coexist instead of overlapping.
+const stackedToasts: HTMLElement[] = [];
+const TOAST_TOP = 12;
+const TOAST_GAP = 8;
+
+function restackToasts(): void {
+  let top = TOAST_TOP;
+  for (const el of stackedToasts) {
+    el.style.top = `${top}px`;
+    top += el.offsetHeight + TOAST_GAP;
+  }
+}
+
+function showStackedToast(el: HTMLElement): void {
+  el.style.display = "flex";
+  if (!stackedToasts.includes(el)) stackedToasts.push(el);
+  restackToasts();
+}
+
+function hideStackedToast(el: HTMLElement): void {
+  el.style.display = "none";
+  const i = stackedToasts.indexOf(el);
+  if (i !== -1) stackedToasts.splice(i, 1);
+  restackToasts();
 }
 
 export function createOverlay(): OverlayHandles {
@@ -183,11 +223,11 @@ export function createOverlay(): OverlayHandles {
       });
     },
 
-    toast(text, kind = "info") {
+    toast(text, kind = "info", onCancel) {
       toastEl.textContent = "";
       if (kind === "busy") {
         const spin = document.createElement("span");
-        spin.style.cssText = `display:inline-block;width:9px;height:9px;border:1.5px solid ${ACCENT};border-top-color:transparent;border-radius:50%;`;
+        spin.style.cssText = `flex:none;display:inline-block;width:9px;height:9px;border:1.5px solid ${ACCENT};border-top-color:transparent;border-radius:50%;`;
         spin.animate([{ transform: "rotate(0)" }, { transform: "rotate(360deg)" }], {
           duration: 700,
           iterations: Infinity,
@@ -200,11 +240,27 @@ export function createOverlay(): OverlayHandles {
         toastEl.appendChild(mark);
       }
       toastEl.appendChild(document.createTextNode(text));
-      toastEl.style.display = "flex";
+      if (onCancel) {
+        const x = document.createElement("button");
+        x.type = "button";
+        x.textContent = "✕";
+        x.setAttribute("aria-label", "Cancel this run");
+        x.title = "Cancel this run";
+        x.style.cssText = `flex:none;margin:-3px -7px -3px 3px;padding:3px 7px;background:none;border:none;color:#a7f3d0;font:600 12px ${FONT};line-height:1;cursor:pointer;opacity:.7;`;
+        x.addEventListener("pointerenter", () => (x.style.opacity = "1"));
+        x.addEventListener("pointerleave", () => (x.style.opacity = ".7"));
+        x.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onCancel();
+        });
+        toastEl.appendChild(x);
+      }
+      showStackedToast(toastEl);
     },
 
     hideToast() {
-      toastEl.style.display = "none";
+      hideStackedToast(toastEl);
     },
 
     destroy() {
@@ -212,6 +268,9 @@ export function createOverlay(): OverlayHandles {
       // document-level listener is removed — not left dangling until the
       // next unrelated click.
       cancelActivePrompt?.();
+      // Drop this picker's toast from the shared stack so a destroyed picker
+      // doesn't leave a gap above the others.
+      hideStackedToast(toastEl);
       host.remove();
     },
   };

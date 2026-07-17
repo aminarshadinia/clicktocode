@@ -1,6 +1,6 @@
 {
   "name": "@clicktocode/angular",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "sideEffects": false,
   "description": "Click an element in your running Angular app and hand it to a coding agent \u2014 element picker + OpenCode bridge.",
   "keywords": [

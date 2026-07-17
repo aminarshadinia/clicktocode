@@ -272,7 +272,8 @@ export function createPicker(options: CreatePickerOptions): Picker {
       toastTimer = setTimeout(() => ui()?.hideToast(), 2000);
     };
     clearToastTimer();
-    ui()?.toast(`Sending to ${adapter.name}… (Esc to cancel)`, "busy");
+    // The ✕ cancels just this run; Esc still cancels every in-flight run.
+    ui()?.toast(`Sending to ${adapter.name}…`, "busy", () => cancelActive?.());
     try {
       await adapter.send(context, instruction);
       if (!busy) return; // cancelled mid-flight

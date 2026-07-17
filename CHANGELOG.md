@@ -4,6 +4,24 @@ All notable changes to the clicktocode packages are documented here. The
 packages share a version, so an entry applies to every `@clicktocode/*` package
 unless noted.
 
+## 0.3.3
+
+### Added
+
+- **✕ button on the in-progress toast.** While a run is sending, its status
+  toast now carries an ✕ that cancels just that run — handy when more than one
+  is in flight, since each toast cancels its own. Esc still cancels every
+  in-flight run.
+
+### Fixed
+
+- **Two pickers no longer stack their toasts on top of each other.** Each picker
+  instance pins its status toast to the same top-center spot, so triggering a
+  clipboard copy (⌘C) while an agent run was still in progress painted the
+  "Copied" toast directly over the run's live "Sending…" progress. Toasts from
+  every picker instance now lay out in a vertical stack in the order they
+  appear, and slide up to fill the gap when one dismisses.
+
 ## 0.3.2
 
 ### Fixed
